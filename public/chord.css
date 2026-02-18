@@ -1,0 +1,56 @@
+/* ===== Chord Viewer 用スタイル ===== */
+#chordDisplay { 
+  margin-top: 20px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 10px; 
+}
+
+.bar { 
+  display: flex; 
+  gap: 5px; 
+  flex-wrap: nowrap; 
+  align-items: center; 
+  overflow-x: auto; 
+  padding-bottom: 5px;
+}
+
+.bar-label { 
+  font-weight: bold; 
+  margin-right: 5px; 
+  white-space: nowrap; 
+  flex-shrink: 0;
+}
+
+.chord-box { 
+  padding: 6px 10px; 
+  border: 1px solid #aaa; 
+  border-radius: 5px; 
+  background-color: #f0f0f0; 
+  font-weight: bold; 
+  text-align: center;
+  white-space: nowrap; 
+  flex-shrink: 0; 
+  transition: background 0.2s ease;
+}
+
+.chord-box.current { 
+  background-color: #2196F3; 
+  color: white; 
+}
+
+/* コード進行表示用 */
+.chord-grid {
+  margin-top: 15px;
+  font-size: 20px;
+  line-height: 1.8;
+}
+
+.chord-grid span {
+  display: inline-block;
+  margin-right: 15px;
+  font-weight: bold;
+  padding: 2px 4px;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
