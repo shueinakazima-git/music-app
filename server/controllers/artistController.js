@@ -96,7 +96,11 @@ async function createArtist(req, res) {
 
 // Update an artist
 async function updateArtist(req, res) {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'invalid id' });
+  }
+
   const { creator_id, date_of_birth, started_at, ended_at } = req.body;
 
   if (!creator_id) {
@@ -161,7 +165,10 @@ async function updateArtist(req, res) {
 
 // Delete an artist
 async function deleteArtist(req, res) {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'invalid id' });
+  }
 
   try {
     const connection = await db.getConnection();

@@ -62,7 +62,11 @@ async function createTag(req, res) {
 
 // Update a tag
 async function updateTag(req, res) {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'invalid id' });
+  }
+
   const { tag_name, note } = req.body;
 
   if (!tag_name) {
@@ -106,7 +110,10 @@ async function updateTag(req, res) {
 
 // Delete a tag (soft delete)
 async function deleteTag(req, res) {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'invalid id' });
+  }
 
   try {
     const connection = await db.getConnection();

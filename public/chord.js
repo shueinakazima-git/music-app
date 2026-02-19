@@ -1,43 +1,54 @@
 let songs = [];
 
-async function loadSongs() {
-  const res = await fetch('/music');
-  songs = await res.json();
-
+document.addEventListener("DOMContentLoaded", () => {
   const select = document.getElementById('songSelect');
-
-  songs.forEach(song => {
-    const option = document.createElement('option');
-    option.value = song.MUSIC_ID;
-    option.textContent = song.MUSIC_TITLE;
-    select.appendChild(option);
-  });
-}
-
-function showChord() {
-  const select = document.getElementById('songSelect');
-  const selectedId = parseInt(select.value);
-
-  const song = songs.find(s => s.MUSIC_ID === selectedId);
-
+  const button = document.getElementById('showChordBtn');
   const chordDisplay = document.getElementById('chordDisplay');
 
-  // 仮コード（BPMで変える）
-  let chord;
+  button.addEventListener("click", showChord);
 
-  if (song.BPM >= 130) {
-    chord = "C - G - Am - F";
-  } else if (song.BPM >= 100) {
-    chord = "G - D - Em - C";
-  } else {
-    chord = "Am - F - C - G";
+  loadSongs(); // 曲リストを読み込む
+
+  async function loadSongs() {
+    const res = await fetch('/music');
+    songs = await res.json();
+
+    select.innerHTML = "";
+
+    songs.forEach(song => {
+      const option = document.createElement('option');
+      option.value = song.MUSIC_ID;
+      option.textContent = song.MUSIC_TITLE;
+      select.appendChild(option);
+    });
   }
 
-  chordDisplay.innerHTML = `
-    <h2>${song.MUSIC_TITLE}</h2>
-    <p>Chord Progression:</p>
-    <strong>${chord}</strong>
-  `;
-}
+  async function showChord() {
+    const musicId = Number(select.value);
+    console.log("Selected musicId =", musicId);
 
-loadSongs();
+    if (!musicId) {
+      chordDisplay.innerHTML = "曲を選択してください";
+      return;
+    }
+
+    const res = await fetch(`/music/${musicId}/chords`);
+    console.log("Fetch status =", res.status);
+    const chords = await res.json();
+    console.log("Fetched chords:", chords);
+
+    if (chords.length === 0) {
+      chordDisplay.innerHTML = "コード進行が登録されていません";
+      return;
+    }
+
+    let html = "<h2>Chord Progression</h2><div class='chord-grid'>";
+    chords.forEach((row, i) => {
+      html += `<span>${row.CHORD_NAME}</span>`;
+      if ((i + 1) % 4 === 0) html += "<br>";
+    });
+    html += "</div>";
+
+    chordDisplay.innerHTML = html;
+  }
+});

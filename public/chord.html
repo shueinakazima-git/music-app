@@ -4,17 +4,23 @@
   <meta charset="UTF-8">
   <title>Chord Viewer</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="chord.css">
 </head>
 <body>
 
 <div class="container">
   <h1>🎼 Chord Viewer</h1>
 
-  <select id="songSelect"></select>
-  <button onclick="showChord()">Show Chord</button>
+  <!-- 曲選択 -->
+  <select id="songSelect">
+    <option value="">-- Select a song --</option>
+  </select>
+  <button id="showChordBtn">Show Chord</button>
 
-  <div id="chordDisplay" style="margin-top:20px; font-size:20px;"></div>
+  <!-- コード表示 -->
+  <div id="chordDisplay"></div>
 
+  <!-- ナビゲーション -->
   <div class="nav-buttons">
     <a href="index.html">🏠 Dashboard</a>
     <a href="list.html">🎵 Music List</a>
@@ -23,6 +29,5 @@
 </div>
 
 <script src="chord.js"></script>
-
 </body>
 </html>

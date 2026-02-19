@@ -94,7 +94,11 @@ async function createGroup(req, res) {
 
 // Update a group
 async function updateGroup(req, res) {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'invalid id' });
+  }
+
   const { creator_id, formation_date, dissolution_date } = req.body;
 
   if (!creator_id) {
@@ -157,7 +161,10 @@ async function updateGroup(req, res) {
 
 // Delete a group
 async function deleteGroup(req, res) {
-  const { id } = req.params;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'invalid id' });
+  }
 
   try {
     const connection = await db.getConnection();

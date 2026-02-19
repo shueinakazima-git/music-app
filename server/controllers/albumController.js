@@ -1,9 +1,9 @@
-const oracledb = require('oracledb');
-const { getConnection } = require('../db');
+const db = require('../db');
+const oracledb = db.oracledb;
 
 exports.getAllAlbums = async (req, res) => {
   try {
-    const conn = await getConnection();
+    const conn = await db.getConnection();
 
     const result = await conn.execute(
       `SELECT
@@ -32,8 +32,13 @@ exports.getAllAlbums = async (req, res) => {
 
 exports.createAlbum = async (req, res) => {
   try {
-    const { album_name, creator_id, release_date } = req.body;
-    const conn = await getConnection();
+    const { album_name, creator_id, release_date } = req.body || {};
+
+    if (!album_name || !album_name.toString().trim()) {
+      return res.status(400).json({ error: 'album_name is required' });
+    }
+
+    const conn = await db.getConnection();
 
     await conn.execute(
       `INSERT INTO tbl_albums (album_name, creator_id, release_date)
@@ -53,10 +58,14 @@ exports.createAlbum = async (req, res) => {
 
 exports.updateAlbum = async (req, res) => {
   try {
-    const id = req.params.id;
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: 'invalid id' });
+    }
+
     const { album_name, creator_id, release_date } = req.body;
 
-    const conn = await getConnection();
+    const conn = await db.getConnection();
 
     await conn.execute(
       `UPDATE tbl_albums
@@ -79,8 +88,12 @@ exports.updateAlbum = async (req, res) => {
 
 exports.deleteAlbum = async (req, res) => {
   try {
-    const id = req.params.id;
-    const conn = await getConnection();
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: 'invalid id' });
+    }
+
+    const conn = await db.getConnection();
 
     await conn.execute(
       `DELETE FROM tbl_albums WHERE album_id = :id`,
@@ -99,8 +112,12 @@ exports.deleteAlbum = async (req, res) => {
 
 exports.getAvailableSongs = async (req, res) => {
   try {
-    const albumId = req.params.id;
-    const conn = await getConnection();
+    const albumId = parseInt(req.params.id, 10);
+    if (Number.isNaN(albumId)) {
+      return res.status(400).json({ error: 'invalid album id' });
+    }
+
+    const conn = await db.getConnection();
 
     // そのアルバムに追加されていない曲を取得
     const result = await conn.execute(
@@ -130,14 +147,18 @@ exports.getAvailableSongs = async (req, res) => {
 
 exports.addSongsToAlbum = async (req, res) => {
   try {
-    const albumId = req.params.id;
+    const albumId = parseInt(req.params.id, 10);
+    if (Number.isNaN(albumId)) {
+      return res.status(400).json({ error: 'invalid album id' });
+    }
+
     const { music_ids } = req.body;
 
     if (!Array.isArray(music_ids) || music_ids.length === 0) {
       return res.status(400).json({ error: "No songs provided" });
     }
 
-    const conn = await getConnection();
+    const conn = await db.getConnection();
 
     // 現在のアルバムの最大track_numberを取得
     const maxTrackResult = await conn.execute(
