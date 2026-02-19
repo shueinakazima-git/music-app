@@ -1,10 +1,15 @@
-const db = require('../db'); // ← 既存DB接続と合わせる
+const db = require('../db');
+const oracledb = db.oracledb;
 
 exports.getChordProgression = async (req, res) => {
-  const musicId = req.params.id;
-
+  let conn;
   try {
-    const result = await db.execute(
+    const musicId = Number(req.params.id);
+    if (Number.isNaN(musicId)) return res.status(400).json({ error: 'Invalid id' });
+
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
       `
       SELECT
           cp.absolute_tick,
@@ -15,17 +20,17 @@ exports.getChordProgression = async (req, res) => {
       WHERE cp.music_id = :music_id
       ORDER BY cp.absolute_tick
       `,
-      { music_id: musicId }
+      { music_id: musicId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    res.json(
-      result.rows.map(row => ({
-        ABSOLUTE_TICK: row[0],
-        CHORD_NAME: row[1]
-      }))
-    );
+    await conn.close();
+
+    res.json(result.rows || []);
   } catch (err) {
     console.error(err);
-    res.status(500).send("DB error");
+    res.status(500).send('DB error');
+  } finally {
+    if (conn) await conn.close();
   }
 };

@@ -1,8 +1,14 @@
 const express = require('express');
+const path = require('path');
+
+// Load environment variables from .env file
+require('dotenv').config();
+
 const app = express();
 
 app.use(express.json());
-app.use(express.static('public'));
+// serve static files from project public directory regardless of cwd
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const musicRoutes = require('./routes/musicRoutes');
 const albumController = require('./controllers/albumController');

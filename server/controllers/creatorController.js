@@ -1,9 +1,9 @@
-const oracledb = require('oracledb');
-const { getConnection } = require('../db');
+const db = require('../db');
+const oracledb = db.oracledb;
 
 exports.getAllCreators = async (req, res) => {
   try {
-    const conn = await getConnection();
+    const conn = await db.getConnection();
 
     const result = await conn.execute(
       `SELECT creator_id, creator_name, creator_type
@@ -25,23 +25,32 @@ exports.getAllCreators = async (req, res) => {
 
 exports.createCreator = async (req, res) => {
   try {
-    const { creator_name, creator_type } = req.body;
-    const conn = await getConnection();
+    const { name, creator_name, type, creator_type } = req.body || {};
+    const creatorName = (name || creator_name || '').toString().trim();
+    const creatorType = (type || creator_type || 'SOLO').toString().trim();
+
+    if (!creatorName) {
+      return res.status(400).json({ error: 'creator_name is required' });
+    }
+
+    const conn = await db.getConnection();
+    const binds = {
+      creator_name: creatorName,
+      creator_type: creatorType,
+      creator_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
+    };
 
     const result = await conn.execute(
       `INSERT INTO tbl_creators (creator_name, creator_type)
        VALUES (:creator_name, :creator_type)
        RETURNING creator_id INTO :creator_id`,
-      { 
-        creator_name, 
-        creator_type,
-        creator_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
-      },
+      binds,
       { autoCommit: true }
     );
 
     await conn.close();
-    res.json({ message: "Creator inserted successfully", creator_id: result.outBinds.creator_id[0] });
+    const outId = result.outBinds && result.outBinds.creator_id && result.outBinds.creator_id[0];
+    res.json({ message: 'Creator inserted successfully', creator_id: outId });
 
   } catch (err) {
     console.error(err);
@@ -51,22 +60,34 @@ exports.createCreator = async (req, res) => {
 
 exports.updateCreator = async (req, res) => {
   try {
-    const id = req.params.id;
-    const { creator_name, creator_type } = req.body;
 
-    const conn = await getConnection();
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: 'invalid id' });
+    }
+
+    const { name, creator_name, type, creator_type } = req.body || {};
+    const creatorName = (name || creator_name || '').toString().trim();
+    const creatorType = (type || creator_type || '').toString().trim();
+
+    if (!creatorName && !creatorType) {
+      return res.status(400).json({ error: 'nothing to update' });
+    }
+
+    const conn = await db.getConnection();
+    const binds = { creator_name: creatorName || undefined, creator_type: creatorType || undefined, id };
 
     await conn.execute(
       `UPDATE tbl_creators
-       SET creator_name = :creator_name,
-           creator_type = :creator_type
+       SET creator_name = NVL(:creator_name, creator_name),
+           creator_type = NVL(:creator_type, creator_type)
        WHERE creator_id = :id`,
-      { creator_name, creator_type, id },
+      binds,
       { autoCommit: true }
     );
 
     await conn.close();
-    res.json({ message: "Creator updated successfully" });
+    res.json({ message: 'Creator updated successfully' });
 
   } catch (err) {
     console.error(err);
@@ -76,10 +97,12 @@ exports.updateCreator = async (req, res) => {
 
 exports.deleteCreator = async (req, res) => {
   try {
-    const id = req.params.id;
-    const conn = await getConnection();
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: 'invalid id' });
+    }
 
-    // 関連データを削除（ON DELETE CASCADEで自動削除されるので、直接削除すればOK）
+    const conn = await db.getConnection();
     await conn.execute(
       `DELETE FROM tbl_creators WHERE creator_id = :id`,
       { id },
@@ -87,7 +110,7 @@ exports.deleteCreator = async (req, res) => {
     );
 
     await conn.close();
-    res.json({ message: "Creator deleted successfully" });
+    res.json({ message: 'Creator deleted successfully' });
 
   } catch (err) {
     console.error(err);

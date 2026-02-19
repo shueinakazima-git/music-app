@@ -1,5 +1,5 @@
 const oracledb = require('oracledb');
-const { getConnection } = require('../db');
+const db = require('../db');
 
 //
 // 統計情報取得
@@ -8,7 +8,7 @@ exports.getStats = async (req, res) => {
   let conn;
 
   try {
-    conn = await getConnection();
+    conn = await db.getConnection();
 
     const totalSongs = await conn.execute(
       `SELECT COUNT(*) AS TOTAL FROM tbl_music`,
@@ -49,7 +49,7 @@ exports.getAllMusic = async (req, res) => {
   let conn;
 
   try {
-    conn = await getConnection();
+    conn = await db.getConnection();
 
     const creatorId = req.query.creator_id;
 
@@ -94,7 +94,7 @@ exports.getCreators = async (req, res) => {
   let conn;
 
   try {
-    conn = await getConnection();
+    conn = await db.getConnection();
 
     const result = await conn.execute(
       `SELECT creator_id, creator_name FROM tbl_creators`,
@@ -120,7 +120,7 @@ exports.createMusic = async (req, res) => {
 
   try {
     const { title, creator_id, bpm, musical_key, duration_seconds } = req.body;
-    conn = await getConnection();
+    conn = await db.getConnection();
 
     await conn.execute(
       `INSERT INTO tbl_music
@@ -150,7 +150,7 @@ exports.updateMusic = async (req, res) => {
     const id = Number(req.params.id);
     const { title, bpm, musical_key, duration_seconds } = req.body;
 
-    conn = await getConnection();
+    conn = await db.getConnection();
 
     await conn.execute(
       `UPDATE tbl_music
@@ -203,26 +203,13 @@ exports.deleteMusic = async (req, res) => {
 // コード進行取得
 //
 exports.getChordProgression = async (req, res) => {
-  console.log("getChordProgression called");
-
   let conn;
 
   try {
     const id = Number(req.params.id);
-    console.log("music id =", id, typeof id);
+    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
 
-    conn = await getConnection();
-
-    const check = await conn.execute(
-      `SELECT COUNT(*) CNT
-        FROM tbl_chord_progression
-        WHERE music_id = :id`,
-      { id },
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
-    );
-
-    console.log("COUNT =", check.rows);
-
+    conn = await db.getConnection();
 
     const sql = `
       SELECT
@@ -235,55 +222,13 @@ exports.getChordProgression = async (req, res) => {
       ORDER BY cp.absolute_tick
     `;
 
-    console.log("SQL =", sql);
-    console.log("bind =", id);
-
-    const userCheck = await conn.execute(
-      `SELECT USER FROM dual`
-    );
-
-    console.log("DB USER =", userCheck.rows[0][0]);
-
-    const pdbCheck = await conn.execute(
-      `SELECT sys_context('userenv','con_name') FROM dual`
-    );
-
-    console.log("CON_NAME =", pdbCheck.rows[0][0]);
-
-    const dbCheck = await conn.execute(
-      `SELECT dbid, name FROM v$database`
-    );
-
-    console.log("DB =", dbCheck.rows);
-
-    const m = await conn.execute(
-  `SELECT COUNT(*) CNT FROM tbl_music`,
-  [],
-  { outFormat: oracledb.OUT_FORMAT_OBJECT }
-);
-
-console.log("MUSIC COUNT =", m.rows);
-
-
     const result = await conn.execute(
-      `
-      SELECT
-        cp.absolute_tick,
-        c.chord_name
-      FROM tbl_chord_progression cp
-      LEFT JOIN tbl_chords c
-        ON cp.chord_id = c.chord_id
-      WHERE cp.music_id = 1
-      ORDER BY cp.absolute_tick
-      `,
-      [],
+      sql,
+      { id },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log("rows =", result.rows);
-
-
-    res.json(result.rows);
+    res.json(result.rows || []);
 
   } catch (err) {
     console.error(err);
