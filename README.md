@@ -20,7 +20,11 @@
 
 - **Node.js**: v14 以上
 - **npm**: 6 以上 または **yarn**
-- **Oracle Database**: 11g 以上（フリーバージョン [Oracle Database Free](https://www.oracle.com/jp/database/free/) でも動作確認済み）
+- **データベース**: Oracle または PostgreSQL
+  - Oracle Database 11g 以上（フリーバージョン [Oracle Database Free](https://www.oracle.com/jp/database/free/) でも動作確認済み）
+  - PostgreSQL 13 以上（`pg` ドライバを利用）
+
+環境変数 `DB_TYPE` に `oracle`（デフォルト）または `postgres` を指定することで切り替え可能です。
 
 ## セットアップ
 
@@ -45,17 +49,35 @@ npm install
 cp .env.example .env
 ```
 
-`.env` ファイルを編集して、実際のデータベース認証情報を設定してください：
+`.env` ファイルを編集して、実際のデータベース認証情報を設定してください。接続先に応じて環境変数が変わります。
 
+#### Oracle の場合
 ```env
+DB_TYPE=oracle
 DB_USER=system
 DB_PASSWORD=your_actual_password
 DB_CONNECT_STRING=localhost/FREEPDB1
 ```
 
+- `DB_TYPE`: `oracle`（省略時デフォルト）
 - `DB_USER`: Oracle データベースのユーザー名
 - `DB_PASSWORD`: Oracle データベースのパスワード
 - `DB_CONNECT_STRING`: データベース接続文字列（ホスト/SID）
+
+#### PostgreSQL の場合
+```env
+DB_TYPE=postgres
+PG_USER=postgres
+PG_PASSWORD=your_password
+PG_HOST=localhost
+PG_PORT=5432
+PG_DATABASE=musicapp
+```
+
+- `DB_TYPE`: `postgres`
+- `PG_USER`/`PG_PASSWORD`/`PG_HOST`/`PG_PORT`/`PG_DATABASE`: PostgreSQL 接続パラメータ
+
+Oracle 用の変数（`DB_USER` など）は引き続き利用可能ですが、PostgreSQL では `PG_` 系を優先して読み込みます。
 
 ### 4. データベーステーブルの初期化
 

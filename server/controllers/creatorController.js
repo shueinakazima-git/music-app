@@ -34,22 +34,33 @@ exports.createCreator = async (req, res) => {
     }
 
     const conn = await db.getConnection();
-    const binds = {
-      creator_name: creatorName,
-      creator_type: creatorType,
-      creator_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
-    };
-
-    const result = await conn.execute(
-      `INSERT INTO tbl_creators (creator_name, creator_type)
-       VALUES (:creator_name, :creator_type)
-       RETURNING creator_id INTO :creator_id`,
-      binds,
-      { autoCommit: true }
-    );
+    let outId;
+    if (db.dbType === 'oracle') {
+      const binds = {
+        creator_name: creatorName,
+        creator_type: creatorType,
+        creator_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT }
+      };
+      const result = await conn.execute(
+        `INSERT INTO tbl_creators (creator_name, creator_type)
+         VALUES (:creator_name, :creator_type)
+         RETURNING creator_id INTO :creator_id`,
+        binds,
+        { autoCommit: true }
+      );
+      outId = result.outBinds && result.outBinds.creator_id && result.outBinds.creator_id[0];
+    } else {
+      const result = await conn.execute(
+        `INSERT INTO tbl_creators (creator_name, creator_type)
+         VALUES (:creator_name, :creator_type)
+         RETURNING creator_id`,
+        { creator_name: creatorName, creator_type: creatorType },
+        { autoCommit: true }
+      );
+      outId = result.rows[0] && result.rows[0].creator_id;
+    }
 
     await conn.close();
-    const outId = result.outBinds && result.outBinds.creator_id && result.outBinds.creator_id[0];
     res.json({ message: 'Creator inserted successfully', creator_id: outId });
 
   } catch (err) {

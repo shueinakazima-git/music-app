@@ -12,11 +12,16 @@ async function loadSongs() {
   const data = await res.json();
 
   const list = document.getElementById('songList');
+  if (!list) return;
   list.innerHTML = ""; // 念のため初期化
 
-  data.forEach(song => {
+  (data || []).forEach(song => {
+    const title = song.MUSIC_TITLE || song.music_title || song.title || '';
+    const creator = song.CREATOR_NAME || song.creator_name || song.creator || '';
+    const bpm = song.BPM ?? song.bpm ?? '';
+
     const li = document.createElement('li');
-    li.textContent = `${song.MUSIC_TITLE} - ${song.CREATOR_NAME} - ${song.BPM} BPM`;
+    li.textContent = `${title} - ${creator} - ${bpm} BPM`;
     list.appendChild(li);
   });
 }

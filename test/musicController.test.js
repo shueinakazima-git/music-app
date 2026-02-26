@@ -10,7 +10,7 @@ function withMockedDb(mockConn, fn) {
   const origCtrl = require.cache[ctrlPath];
 
   // put mock db into cache
-  require.cache[dbPath] = { id: dbPath, filename: dbPath, loaded: true, exports: { getConnection: async () => mockConn } };
+  require.cache[dbPath] = { id: dbPath, filename: dbPath, loaded: true, exports: { getConnection: async () => mockConn, oracledb: { OUT_FORMAT_OBJECT: 1, BIND_OUT: 2002, NUMBER: 2 } } };
 
   // remove controller so it will re-require and pick up mock
   delete require.cache[ctrlPath];

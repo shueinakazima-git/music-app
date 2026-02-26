@@ -846,8 +846,8 @@ async function loadArtists() {
         <td>${artist.STARTED_AT ? artist.STARTED_AT.substring(0, 10) : ''}</td>
         <td>${artist.ENDED_AT ? artist.ENDED_AT.substring(0, 10) : ''}</td>
         <td>
-          <button class="btn-edit" onclick="openEditArtistModal(${artist.ARTIST_ID}, ${artist.CREATOR_ID}, '${artist.ARTIST_NAME.replace(/'/g, "\\'")}', '${(artist.DATE_OF_BIRTH || '').substring(0, 10)}', '${(artist.STARTED_AT || '').substring(0, 10)}', '${(artist.ENDED_AT || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
-          <button class="btn-delete" onclick="deleteArtist(${artist.ARTIST_ID}, '${artist.ARTIST_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-edit" onclick="openEditArtistModal(${artist.ARTIST_ID}, ${artist.CREATOR_ID}, '${(artist.ARTIST_NAME || '').replace(/'/g, "\\'")}', '${(artist.DATE_OF_BIRTH || '').substring(0, 10)}', '${(artist.STARTED_AT || '').substring(0, 10)}', '${(artist.ENDED_AT || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
+          <button class="btn-delete" onclick="deleteArtist(${artist.ARTIST_ID}, '${(artist.ARTIST_NAME || '').replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);

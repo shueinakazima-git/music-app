@@ -1,11 +1,17 @@
-const oracledb = require('oracledb');
 const db = require('../db');
+const oracledb = db.oracledb;
 
 //
 // 統計情報取得
 //
 exports.getStats = async (req, res) => {
   let conn;
+
+  function firstValue(row) {
+    if (!row) return 0;
+    // try common variants
+    return row.TOTAL ?? row.total ?? row.AVG_BPM ?? row.avg_bpm ?? Object.values(row)[0] ?? 0;
+  }
 
   try {
     conn = await db.getConnection();
@@ -28,10 +34,14 @@ exports.getStats = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
+    const ts = totalSongs.rows && totalSongs.rows[0] ? firstValue(totalSongs.rows[0]) : 0;
+    const tc = totalCreators.rows && totalCreators.rows[0] ? firstValue(totalCreators.rows[0]) : 0;
+    const ab = avgBpm.rows && avgBpm.rows[0] ? firstValue(avgBpm.rows[0]) : 0;
+
     res.json({
-      totalSongs: totalSongs.rows[0].TOTAL,
-      totalCreators: totalCreators.rows[0].TOTAL,
-      avgBpm: avgBpm.rows[0].AVG_BPM || 0
+      totalSongs: Number(ts) || 0,
+      totalCreators: Number(tc) || 0,
+      avgBpm: Number(ab) || 0
     });
 
   } catch (err) {
@@ -77,6 +87,8 @@ exports.getAllMusic = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
+    // normalize column keys to UPPERCASE so front-end code (which expects
+    // fields like MUSIC_TITLE, CREATOR_NAME) keeps working across DB drivers
     res.json(result.rows);
 
   } catch (err) {

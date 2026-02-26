@@ -1,13 +1,10 @@
-const oracledb = require('oracledb');
+const db = require('./db');
 
 async function resetDatabase() {
   let conn;
   try {
-    conn = await oracledb.getConnection({
-      user: 'system',
-      password: 'Password123',
-      connectString: 'localhost/FREEPDB1'
-    });
+    conn = await db.getConnection();
+    const isPg = db.dbType === 'postgres';
 
     console.log('Connected to database. Starting reset...\n');
 
@@ -31,11 +28,14 @@ async function resetDatabase() {
     ];
 
     for (const table of tables) {
+      const sql = isPg
+        ? `DROP TABLE IF EXISTS ${table} CASCADE`
+        : `DROP TABLE ${table}`;
       try {
-        await conn.execute(`DROP TABLE ${table}`);
+        await conn.execute(sql);
         console.log(`✓ Dropped ${table}`);
       } catch (err) {
-        if (err.errorNum === 942) {
+        if (!isPg && err.errorNum === 942) {
           console.log(`  ${table} does not exist (skipping)`);
         } else {
           throw err;
@@ -47,7 +47,7 @@ async function resetDatabase() {
     console.log('Now run: node server/initDb.js');
 
   } catch (err) {
-    console.error('❌ Error:', err.message);
+    console.error('❌ Error:', err.message || err);
   } finally {
     if (conn) {
       try {
