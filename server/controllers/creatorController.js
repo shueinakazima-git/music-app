@@ -85,12 +85,16 @@ exports.updateCreator = async (req, res) => {
     }
 
     const conn = await db.getConnection();
-    const binds = { creator_name: creatorName || undefined, creator_type: creatorType || undefined, id };
+    const binds = { 
+      creator_name: creatorName || null,
+      creator_type: creatorType || null,
+      id
+    };
 
     await conn.execute(
       `UPDATE tbl_creators
-       SET creator_name = NVL(:creator_name, creator_name),
-           creator_type = NVL(:creator_type, creator_type)
+       SET creator_name = COALESCE(:creator_name, creator_name),
+           creator_type = COALESCE(:creator_type, creator_type)
        WHERE creator_id = :id`,
       binds,
       { autoCommit: true }

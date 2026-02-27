@@ -87,9 +87,17 @@ exports.getAllMusic = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
+    const rows = result.rows.map(row => {
+      const obj = {};
+      for (const key in row) {
+        obj[key.toLowerCase()] = row[key];
+      }
+      return obj;
+    });
+
     // normalize column keys to UPPERCASE so front-end code (which expects
     // fields like MUSIC_TITLE, CREATOR_NAME) keeps working across DB drivers
-    res.json(result.rows);
+    res.json(rows);
 
   } catch (err) {
     console.error(err);
@@ -109,12 +117,20 @@ exports.getCreators = async (req, res) => {
     conn = await db.getConnection();
 
     const result = await conn.execute(
-      `SELECT creator_id, creator_name FROM tbl_creators`,
+      `SELECT creator_id, creator_name, creator_type FROM tbl_creators`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    res.json(result.rows);
+    const rows = result.rows.map(row => {
+      const obj = {};
+      for (const key in row) {
+        obj[key.toLowerCase()] = row[key];
+      }
+      return obj;
+    });
+
+    res.json(rows);
 
   } catch (err) {
     console.error(err);
@@ -193,8 +209,8 @@ exports.deleteMusic = async (req, res) => {
 
   try {
     const id = Number(req.params.id);
-    conn = await getConnection();
-
+    conn = await db.getConnection();
+    
     await conn.execute(
       `DELETE FROM tbl_music WHERE music_id = :id`,
       { id },
@@ -240,7 +256,15 @@ exports.getChordProgression = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    res.json(result.rows || []);
+    const rows = (result.rows || []).map(row => {
+      const obj = {};
+      for (const key in row) {
+        obj[key.toLowerCase()] = row[key];
+      }
+      return obj;
+    });
+
+    res.json(rows);
 
   } catch (err) {
     console.error(err);

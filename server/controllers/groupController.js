@@ -47,7 +47,7 @@ async function createGroup(req, res) {
       return res.status(400).json({ error: 'Creator not found' });
     }
 
-    if (creatorCheck.rows[0].CREATOR_TYPE !== 'GROUP') {
+    if (creatorCheck.rows[0].creator_type !== 'GROUP') {
       await connection.close();
       return res.status(400).json({ error: 'Only GROUP creators can be groups' });
     }
@@ -120,7 +120,7 @@ async function updateGroup(req, res) {
       return res.status(400).json({ error: 'Creator not found' });
     }
 
-    if (creatorCheck.rows[0].CREATOR_TYPE !== 'GROUP') {
+    if (creatorCheck.rows[0].creator_type !== 'GROUP') {
       await connection.close();
       return res.status(400).json({ error: 'Only GROUP creators can be groups' });
     }

@@ -1,7 +1,7 @@
 async function loadCreators() {
   try {
     const res = await fetch('/music/creators');
-    
+
     if (!res.ok) {
       console.error('Failed to load creators. Status:', res.status);
       alert('Failed to load artists. Please refresh the page.');
@@ -22,13 +22,13 @@ async function loadCreators() {
 
     creators.forEach(creator => {
       const tr = document.createElement('tr');
-      const typeLabel = creator.CREATOR_TYPE === 'SOLO' ? 'Solo Artist' : 'Group/Band';
+      const typeLabel = creator.creator_type === 'SOLO' ? 'Solo Artist' : 'Group/Band';
       tr.innerHTML = `
-        <td>${creator.CREATOR_NAME}</td>
+        <td>${creator.creator_name}</td>
         <td>${typeLabel}</td>
         <td>
-          <button class="btn-edit" onclick="openEditCreatorModal(${creator.CREATOR_ID}, '${creator.CREATOR_NAME.replace(/'/g, "\\'")}', '${creator.CREATOR_TYPE}')">Edit</button>
-          <button class="btn-delete" onclick="deleteCreator(${creator.CREATOR_ID}, '${creator.CREATOR_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-edit" onclick="openEditCreatorModal(${creator.creator_id}, '${creator.creator_name.replace(/'/g, "\\'")}', '${creator.creator_type}')">Edit</button>
+          <button class="btn-delete" onclick="deleteCreator(${creator.creator_id}, '${creator.creator_name.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -57,24 +57,24 @@ async function loadCreators() {
     // SOLOとGROUPで分ける
     creators.forEach(creator => {
       const option1 = document.createElement('option');
-      option1.value = creator.CREATOR_ID;
-      option1.textContent = creator.CREATOR_NAME;
+      option1.value = creator.creator_id;
+      option1.textContent = creator.creator_name;
       songSelect.appendChild(option1);
 
       const option2 = document.createElement('option');
-      option2.value = creator.CREATOR_ID;
-      option2.textContent = creator.CREATOR_NAME;
+      option2.value = creator.creator_id;
+      option2.textContent = creator.creator_name;
       albumSelect.appendChild(option2);
 
-      if (creator.CREATOR_TYPE === 'SOLO') {
+      if (creator.creator_type === 'SOLO') {
         const option3 = document.createElement('option');
-        option3.value = creator.CREATOR_ID;
-        option3.textContent = creator.CREATOR_NAME;
+        option3.value = creator.creator_id;
+        option3.textContent = creator.creator_name;
         artistCreatorSelect.appendChild(option3);
-      } else if (creator.CREATOR_TYPE === 'GROUP') {
+      } else if (creator.creator_type === 'GROUP') {
         const option4 = document.createElement('option');
-        option4.value = creator.CREATOR_ID;
-        option4.textContent = creator.CREATOR_NAME;
+        option4.value = creator.creator_id;
+        option4.textContent = creator.creator_name;
         groupCreatorSelect.appendChild(option4);
       }
     });
@@ -103,12 +103,12 @@ async function loadSongs() {
     data.forEach(song => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${song.MUSIC_TITLE}</td>
-        <td>${song.CREATOR_NAME}</td>
-        <td>${song.BPM} BPM</td>
+        <td>${song.music_title}</td>
+        <td>${song.creator_name}</td>
+        <td>${song.bpm} BPM</td>
         <td>
-          <button class="btn-edit" onclick="openEditModal(${song.MUSIC_ID}, '${song.MUSIC_TITLE.replace(/'/g, "\\'")}', ${song.BPM}, '${song.MUSICAL_KEY ? song.MUSICAL_KEY.replace(/'/g, "\\'") : ''}', ${song.DURATION_SECONDS || 0})">Edit</button>
-          <button class="btn-delete" onclick="deleteSong(${song.MUSIC_ID}, '${song.MUSIC_TITLE.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-edit" onclick="openEditModal(${song.music_id}, '${song.music_title.replace(/'/g, "\\'")}', ${song.bpm}, '${song.musical_key ? song.musical_key.replace(/'/g, "\\'") : ''}', ${song.duration_seconds || 0})">Edit</button>
+          <button class="btn-delete" onclick="deleteSong(${song.music_id}, '${song.music_title.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -135,13 +135,13 @@ async function loadAlbums() {
       const tr = document.createElement('tr');
       const releaseDate = album.RELEASE_DATE ? new Date(album.RELEASE_DATE).toLocaleDateString() : 'N/A';
       tr.innerHTML = `
-        <td>${album.ALBUM_NAME}</td>
-        <td>${album.CREATOR_NAME || 'N/A'}</td>
+        <td>${album.album_name}</td>
+        <td>${album.creator_name || 'N/A'}</td>
         <td>${releaseDate}</td>
         <td>
-          <button class="btn-secondary" onclick="openAddSongsModal(${album.ALBUM_ID}, '${album.ALBUM_NAME.replace(/'/g, "\\'")}')" style="background: #FF9800;">Add Songs</button>
-          <button class="btn-edit" onclick="openEditAlbumModal(${album.ALBUM_ID}, '${album.ALBUM_NAME.replace(/'/g, "\\'")}', ${album.CREATOR_ID || 0}, '${album.RELEASE_DATE || ''}')">Edit</button>
-          <button class="btn-delete" onclick="deleteAlbum(${album.ALBUM_ID}, '${album.ALBUM_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-secondary" onclick="openAddSongsModal(${album.album_id}, '${album.album_name.replace(/'/g, "\\'")}')" style="background: #FF9800;">Add Songs</button>
+          <button class="btn-edit" onclick="openEditAlbumModal(${album.album_id}, '${album.album_name.replace(/'/g, "\\'")}', ${album.creator_id || 0}, '${album.release_date || ''}')">Edit</button>
+          <button class="btn-delete" onclick="deleteAlbum(${album.album_id}, '${album.album_name.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -586,7 +586,7 @@ async function openAddSongsModal(albumId, albumName) {
       div.innerHTML = `
         <label>
           <input type="checkbox" name="songCheckbox" value="${song.MUSIC_ID}">
-          ${song.MUSIC_TITLE} - ${song.CREATOR_NAME} (${song.BPM} BPM)
+          ${song.MUSIC_TITLE} - ${song.creator_name} (${song.BPM} BPM)
         </label>
       `;
       songsList.appendChild(div);
@@ -674,11 +674,11 @@ async function loadTags() {
     tags.forEach(tag => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${tag.TAG_NAME}</td>
-        <td>${tag.NOTE || ''}</td>
+        <td>${tag.tag_name}</td>
+        <td>${tag.note || ''}</td>
         <td>
-          <button class="btn-edit" onclick="openEditTagModal(${tag.TAG_ID}, '${tag.TAG_NAME.replace(/'/g, "\\'")}', '${(tag.NOTE || '').replace(/'/g, "\\'")}')" style="margin-right: 5px;">Edit</button>
-          <button class="btn-delete" onclick="deleteTag(${tag.TAG_ID}, '${tag.TAG_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-edit" onclick="openEditTagModal(${tag.tag_id}, '${tag.tag_name.replace(/'/g, "\\'")}', '${(tag.note || '').replace(/'/g, "\\'")}')" style="margin-right: 5px;">Edit</button>
+          <button class="btn-delete" onclick="deleteTag(${tag.tag_id}, '${tag.tag_name.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -841,13 +841,13 @@ async function loadArtists() {
     artists.forEach(artist => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${artist.ARTIST_NAME}</td>
-        <td>${artist.DATE_OF_BIRTH ? artist.DATE_OF_BIRTH.substring(0, 10) : ''}</td>
-        <td>${artist.STARTED_AT ? artist.STARTED_AT.substring(0, 10) : ''}</td>
-        <td>${artist.ENDED_AT ? artist.ENDED_AT.substring(0, 10) : ''}</td>
+        <td>${artist.artist_name}</td>
+        <td>${artist.date_of_birth ? artist.date_of_birth.substring(0, 10) : ''}</td>
+        <td>${artist.started_at ? artist.started_at.substring(0, 10) : ''}</td>
+        <td>${artist.ended_at ? artist.ended_at.substring(0, 10) : ''}</td>
         <td>
-          <button class="btn-edit" onclick="openEditArtistModal(${artist.ARTIST_ID}, ${artist.CREATOR_ID}, '${(artist.ARTIST_NAME || '').replace(/'/g, "\\'")}', '${(artist.DATE_OF_BIRTH || '').substring(0, 10)}', '${(artist.STARTED_AT || '').substring(0, 10)}', '${(artist.ENDED_AT || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
-          <button class="btn-delete" onclick="deleteArtist(${artist.ARTIST_ID}, '${(artist.ARTIST_NAME || '').replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-edit" onclick="openEditArtistModal(${artist.artist_id}, ${artist.creator_id}, '${(artist.artist_name || '').replace(/'/g, "\\'")}', '${(artist.date_of_birth || '').substring(0, 10)}', '${(artist.started_at || '').substring(0, 10)}', '${(artist.ended_at || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
+          <button class="btn-delete" onclick="deleteArtist(${artist.artist_id}, '${(artist.artist_name || '').replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -1021,12 +1021,12 @@ async function loadGroups() {
     groups.forEach(group => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${group.GROUP_NAME}</td>
-        <td>${group.FORMATION_DATE ? group.FORMATION_DATE.substring(0, 10) : ''}</td>
-        <td>${group.DISSOLUTION_DATE ? group.DISSOLUTION_DATE.substring(0, 10) : ''}</td>
+        <td>${group.group_name}</td>
+        <td>${group.formation_date ? group.formation_date.substring(0, 10) : ''}</td>
+        <td>${group.dissolution_date ? group.dissolution_date.substring(0, 10) : ''}</td>
         <td>
-          <button class="btn-edit" onclick="openEditGroupModal(${group.GROUP_ID}, ${group.CREATOR_ID}, '${group.GROUP_NAME.replace(/'/g, "\\'")}', '${(group.FORMATION_DATE || '').substring(0, 10)}', '${(group.DISSOLUTION_DATE || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
-          <button class="btn-delete" onclick="deleteGroup(${group.GROUP_ID}, '${group.GROUP_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-edit" onclick="openEditGroupModal(${group.group_id}, ${group.creator_id}, '${group.group_name.replace(/'/g, "\\'")}', '${(group.formation_date || '').substring(0, 10)}', '${(group.dissolution_date || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
+          <button class="btn-delete" onclick="deleteGroup(${group.group_id}, '${group.group_name.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);

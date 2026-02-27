@@ -47,7 +47,7 @@ async function createArtist(req, res) {
       return res.status(400).json({ error: 'Creator not found' });
     }
 
-    if (creatorCheck.rows[0].CREATOR_TYPE !== 'SOLO') {
+    if (creatorCheck.rows[0].creator_type !== 'SOLO') {
       await connection.close();
       return res.status(400).json({ error: 'Only SOLO creators can be artists' });
     }
@@ -122,7 +122,7 @@ async function updateArtist(req, res) {
       return res.status(400).json({ error: 'Creator not found' });
     }
 
-    if (creatorCheck.rows[0].CREATOR_TYPE !== 'SOLO') {
+    if (creatorCheck.rows[0].creator_type !== 'SOLO') {
       await connection.close();
       return res.status(400).json({ error: 'Only SOLO creators can be artists' });
     }
