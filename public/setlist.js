@@ -13,7 +13,7 @@ async function generateSetlist() {
 
   selected.forEach(song => {
     const li = document.createElement('li');
-    li.textContent = `${song.MUSIC_TITLE} - ${song.CREATOR_NAME} - ${song.BPM} BPM`;
+    li.textContent = `${song.music_title} - ${song.creator_name} - ${song.bpm} BPM`;
     list.appendChild(li);
   });
 }

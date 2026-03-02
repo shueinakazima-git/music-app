@@ -146,6 +146,7 @@ exports.getAvailableSongs = async (req, res) => {
 };
 
 exports.addSongsToAlbum = async (req, res) => {
+  let conn;
   try {
     const albumId = parseInt(req.params.id, 10);
     if (Number.isNaN(albumId)) {
@@ -159,35 +160,35 @@ exports.addSongsToAlbum = async (req, res) => {
     }
 
     const conn = await db.getConnection();
+    await conn.execute("BEGIN");
 
     // 現在のアルバムの最大track_numberを取得
     const maxTrackResult = await conn.execute(
-      `SELECT MAX(track_number) as max_track FROM tbl_album_music WHERE album_id = :albumId`,
-      { albumId },
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      `SELECT COALESCE(MAX(track_number), 0) as max_track
+      FROM tbl_album_music
+      WHERE album_id = $1`,
+      [albumId]
     );
-
-    let nextTrackNumber = 1;
-    if (maxTrackResult.rows[0].MAX_TRACK) {
-      nextTrackNumber = maxTrackResult.rows[0].MAX_TRACK + 1;
-    }
+    let nextTrackNumber = maxTrackResult.rows[0].max_track + 1;
 
     // 各曲をアルバムに追加
     for (const musicId of music_ids) {
       await conn.execute(
         `INSERT INTO tbl_album_music (album_id, music_id, track_number)
-         VALUES (:albumId, :musicId, :trackNumber)`,
-        { albumId, musicId, trackNumber: nextTrackNumber },
-        { autoCommit: true }
+         VALUES ($1, $2, $3)`,
+        [albumId, musicId, nextTrackNumber]
       );
       nextTrackNumber++;
     }
 
-    await conn.close();
+    await conn.execute("COMMIT");
     res.json({ message: "Songs added to album successfully" });
 
   } catch (err) {
     console.error(err);
+    if (conn) await conn.execute("ROLLBACK");
     res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) await conn.release();
   }
 };

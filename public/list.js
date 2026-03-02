@@ -27,6 +27,7 @@ async function loadCreators() {
         <td>${creator.creator_name}</td>
         <td>${typeLabel}</td>
         <td>
+          <button class="btn-more" onclick="openMoreCreatorModal(${creator.creator_id}, '${creator.creator_name.replace(/'/g, "\\'")}', '${creator.creator_type}')">More</button>
           <button class="btn-edit" onclick="openEditCreatorModal(${creator.creator_id}, '${creator.creator_name.replace(/'/g, "\\'")}', '${creator.creator_type}')">Edit</button>
           <button class="btn-delete" onclick="deleteCreator(${creator.creator_id}, '${creator.creator_name.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
@@ -133,7 +134,7 @@ async function loadAlbums() {
 
     data.forEach(album => {
       const tr = document.createElement('tr');
-      const releaseDate = album.RELEASE_DATE ? new Date(album.RELEASE_DATE).toLocaleDateString() : 'N/A';
+      const releaseDate = album.release_date ? new Date(album.release_date).toLocaleDateString() : 'N/A';
       tr.innerHTML = `
         <td>${album.album_name}</td>
         <td>${album.creator_name || 'N/A'}</td>
@@ -479,6 +480,18 @@ async function addCreator(event) {
   }
 }
 
+function openMoreCreatorModal(creatorId, creatorName, creatorType) {
+  document.getElementById('moreCreatorId').value = creatorId;
+  document.getElementById('moreCreatorName').value = creatorName;
+  document.getElementById('moreCreatorType').value = creatorType;
+  
+  document.getElementById('moreCreatorModal').style.display = 'block';
+}
+
+function closeMoreCreatorModal() {
+  document.getElementById('moreCreatorModal').style.display = 'none';
+}
+
 function openEditCreatorModal(creatorId, creatorName, creatorType) {
   document.getElementById('editCreatorId').value = creatorId;
   document.getElementById('editCreatorName').value = creatorName;
@@ -585,8 +598,8 @@ async function openAddSongsModal(albumId, albumName) {
       div.style.marginBottom = '10px';
       div.innerHTML = `
         <label>
-          <input type="checkbox" name="songCheckbox" value="${song.MUSIC_ID}">
-          ${song.MUSIC_TITLE} - ${song.creator_name} (${song.BPM} BPM)
+          <input type="checkbox" name="songCheckbox" value="${song.music_id}">
+          ${song.music_title} - ${song.creator_name} (${song.bpm} BPM)
         </label>
       `;
       songsList.appendChild(div);
@@ -1254,13 +1267,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const editTagForm = document.getElementById('editTagForm');
   editTagForm.addEventListener('submit', updateTag);
 
-  // アーティストフォーム
-  const artistForm = document.getElementById('addArtistForm');
-  artistForm.addEventListener('submit', addArtist);
-
-  const editArtistForm = document.getElementById('editArtistForm');
-  editArtistForm.addEventListener('submit', updateArtist);
-
   // グループフォーム
   const groupForm = document.getElementById('addGroupForm');
   groupForm.addEventListener('submit', addGroup);
@@ -1296,6 +1302,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // クリエイター詳細モーダルの閉じる処理
+  const moreCreatorModal = document.getElementById('moreCreatorModal');
+  const closeMoreCreatorBtn = document.querySelector('.close-morecreator');
+  const cancelMoreCreatorBtn = document.getElementById('cancelMoreCreator');
+
+  closeMoreCreatorBtn.onclick = closeMoreCreatorModal;
+  cancelMoreCreatorBtn.onclick = closeMoreCreatorModal;
+
   // クリエイター編集モーダルの閉じる処理
   const creatorModal = document.getElementById('editCreatorModal');
   const closeCreatorBtn = document.querySelector('.close-creator');
@@ -1304,8 +1318,11 @@ document.addEventListener('DOMContentLoaded', () => {
   closeCreatorBtn.onclick = closeEditCreatorModal;
   cancelCreatorBtn.onclick = closeEditCreatorModal;
 
+  // どちらのモーダルも外側クリックで閉じる
   window.onclick = function(event) {
-    if (event.target === creatorModal) {
+    if (event.target === moreCreatorModal) {
+      closeMoreCreatorModal();
+    } else if (event.target === creatorModal) {
       closeEditCreatorModal();
     }
   };

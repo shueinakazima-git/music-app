@@ -17,8 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     songs.forEach(song => {
       const option = document.createElement('option');
-      option.value = song.MUSIC_ID;
-      option.textContent = song.MUSIC_TITLE;
+      option.value = song.music_id;
+      option.textContent = song.music_title;
       select.appendChild(option);
     });
   }
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let html = "<h2>Chord Progression</h2><div class='chord-grid'>";
     chords.forEach((row, i) => {
-      html += `<span>${row.CHORD_NAME}</span>`;
+      html += `<span>${row.chord_name}</span>`;
       if ((i + 1) % 4 === 0) html += "<br>";
     });
     html += "</div>";

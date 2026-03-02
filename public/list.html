@@ -16,7 +16,6 @@
     <button class="tab-button" data-tab="songs">Songs</button>
     <button class="tab-button" data-tab="albums">Albums</button>
     <button class="tab-button" data-tab="tags">Tags</button>
-    <button class="tab-button" data-tab="artists">Artists</button>
     <button class="tab-button" data-tab="groups">Groups</button>
   </div>
 
@@ -218,7 +217,7 @@
     </div>
   </div>
 
-  <!-- ===== Groups Tab ===== -->
+  <!-- ===== Add Group Members Tab ===== -->
   <div id="groups" class="tab-content">
     <div class="form-section">
       <h2>Add New Group</h2>
@@ -254,6 +253,30 @@
         </thead>
         <tbody id="groupList"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- クリエイター確認用モーダル -->
+  <div id="moreCreatorModal" class="modal">
+    <div class="modal-content">
+      <span class="close-morecreator">&times;</span>
+      <h2>More Creator</h2>
+      <form id="moreCreatorForm">
+        <input type="hidden" id="moreCreatorId">
+        <div class="form-group">
+          <label for="moreCreatorName">Creator Name:</label>
+          <input type="text" id="moreCreatorName" required>
+        </div>
+        <div class="form-group">
+          <label for="moreCreatorType">Creator Type:</label>
+          <select id="moreCreatorType" required>
+            <option value="">-- Select type --</option>
+            <option value="SOLO">Solo Artist</option>
+            <option value="GROUP">Group/Band</option>
+          </select>
+        </div>
+        <button type="button" class="btn-primary" id="cancelMoreCreator">Cancel</button>
+      </form>
     </div>
   </div>
 
