@@ -4,7 +4,9 @@
 
 ## 概要
 
-このアプリケーションは、音楽、アルバム、アーティスト、コード進行などの音楽情報を管理・共有するための Web アプリケーションです。Express.js サーバーと Oracle Database を使用した CRUD 機能を提供します。
+このアプリケーションは、音楽・アルバム・アーティスト・グループ・タグ・コード進行などの情報を管理する Web アプリケーションです。
+
+バックエンドは Express.js + PostgreSQL で構築され、REST API による CRUD 操理を提供します。
 
 ## 主な機能
 
@@ -16,15 +18,22 @@
 - **コード進行**: 楽曲のコード進行情報管理
 - **統計情報**: 音楽データベースの統計情報提供
 
+## 技術スタック
+
+| 分類 | 技術 |
+|----|-----|
+| Runtime | Node.js |
+| Framework | Express.js |
+| Database | PostgreSQL |
+| Driver | pg |
+| Frontend | HTML / CSS / Vanilla JS |
+
+
 ## 必要な環境
 
-- **Node.js**: v14 以上
-- **npm**: 6 以上 または **yarn**
-- **データベース**: Oracle または PostgreSQL
-  - Oracle Database 11g 以上（フリーバージョン [Oracle Database Free](https://www.oracle.com/jp/database/free/) でも動作確認済み）
-  - PostgreSQL 13 以上（`pg` ドライバを利用）
-
-環境変数 `DB_TYPE` に `oracle`（デフォルト）または `postgres` を指定することで切り替え可能です。
+- **Node.js**: v18 以上
+- **npm**: 9 以上 または **yarn**
+- **データベース**: PostgreSQL 13 以上（`pg` ドライバを利用）
 
 ## セットアップ
 
@@ -51,50 +60,19 @@ cp .env.example .env
 
 `.env` ファイルを編集して、実際のデータベース認証情報を設定してください。接続先に応じて環境変数が変わります。
 
-#### Oracle の場合
-```env
-DB_TYPE=oracle
-DB_USER=system
-DB_PASSWORD=your_actual_password
-DB_CONNECT_STRING=localhost/FREEPDB1
-```
-
-- `DB_TYPE`: `oracle`（省略時デフォルト）
-- `DB_USER`: Oracle データベースのユーザー名
-- `DB_PASSWORD`: Oracle データベースのパスワード
-- `DB_CONNECT_STRING`: データベース接続文字列（ホスト/SID）
-
 #### PostgreSQL の場合
 ```env
-DB_TYPE=postgres
 PG_USER=postgres
 PG_PASSWORD=your_password
 PG_HOST=localhost
 PG_PORT=5432
 PG_DATABASE=musicapp
+PORT=3000
 ```
-
-- `DB_TYPE`: `postgres`
-- `PG_USER`/`PG_PASSWORD`/`PG_HOST`/`PG_PORT`/`PG_DATABASE`: PostgreSQL 接続パラメータ
-
-Oracle 用の変数（`DB_USER` など）は引き続き利用可能ですが、PostgreSQL では `PG_` 系を優先して読み込みます。
-
 ### 4. データベーステーブルの初期化
 
 ```bash
 node server/initDb.js
-```
-
-テーブル構造が自動作成されます。
-
-### 5. 本番環境用の環境変数設定（推奨）
-
-本番環境では、環境変数をシステム環境変数として設定することを推奨します：
-
-```bash
-export DB_USER=system
-export DB_PASSWORD=your_secure_password
-export DB_CONNECT_STRING=production_host/PROD_SID
 ```
 
 ## 実行
@@ -122,28 +100,13 @@ Node.js 組み込みテストランナーを使用します。
 | メソッド | エンドポイント | 説明 |
 |---------|---------------|------|
 | GET | `/music` | すべての楽曲を取得 |
+| GET | `/music?creator_id=:id` | クリエイターで絞込 |
 | GET | `/music/:id/chords` | 特定楽曲のコード進行を取得 |
 | POST | `/music` | 新規楽曲を作成 |
 | PUT | `/music/:id` | 楽曲情報を更新 |
 | DELETE | `/music/:id` | 楽曲を削除 |
 | GET | `/music/creators` | すべてのクリエイターを取得 |
 | GET | `/music/stats` | 統計情報を取得 |
-
-**リクエスト例**:
-```bash
-# すべての楽曲を取得
-curl http://localhost:3000/music
-
-# 新規楽曲を作成
-curl -X POST http://localhost:3000/music \
-  -H "Content-Type: application/json" \
-  -d '{
-    "music_name": "Song Title",
-    "album_id": 1,
-    "creator_id": 1,
-    "music_type": "SONG"
-  }'
-```
 
 ### アルバム (`/albums`)
 
@@ -292,6 +255,8 @@ curl -X POST http://localhost:3000/creators \
 - **CORS 対応**: クロスオリジンリクエスト対応
 - **入力サニタイズ**: 不正なデータの防止
 - **接続タイムアウト**: データベース接続のタイムアウト設定
+- **SQLインジェクション防止**: SQLインジェクションを防止
+- **ソフトデリート設計**: ソフトデリート設計
 
 ## トラブルシューティング
 
@@ -343,8 +308,7 @@ exports.getAll = async (req, res) => {
     const conn = await db.getConnection();
     const result = await conn.execute(
       'SELECT * FROM table_name',
-      [],
-      { outFormat: require('../db').oracledb.OUT_FORMAT_OBJECT }
+      []
     );
     await conn.close();
     res.json(result.rows);
@@ -369,14 +333,7 @@ shueinakazima-git
 
 ## 今後の改善予定
 
-- [ ] ページネーション機能
-- [ ] 高度な検索・フィルタリング
-- [ ] 認証・認可機能
-- [ ] キャッシング機能（Redis）
-- [ ] 詳細なテストカバレッジ
-- [ ] API ドキュメント（Swagger/OpenAPI)
-- [ ] Docker コンテナ化
-- [ ] CI/CD パイプライン統合
+- [ ] なし
 
 ## サポート
 

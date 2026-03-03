@@ -71,9 +71,7 @@ async function insertTestData(conn) {
 
   const checkUsers = await conn.execute(
     `SELECT COUNT(*) as cnt FROM tbl_users`,
-    [],
-    { outFormat: oracledb.OUT_FORMAT_OBJECT }
-  );
+    []);
 
   if (checkUsers.rows[0].CNT === 0) {
     await conn.execute(
@@ -86,9 +84,7 @@ async function insertTestData(conn) {
 
   const checkCreators = await conn.execute(
     `SELECT COUNT(*) as cnt FROM tbl_creators`,
-    [],
-    { outFormat: oracledb.OUT_FORMAT_OBJECT }
-  );
+    []);
 
   if (checkCreators.rows[0].CNT === 0) {
     const soloArtists = [
@@ -123,8 +119,7 @@ async function insertTestData(conn) {
 
     const soloResult = await conn.execute(
       `SELECT creator_id, creator_name FROM tbl_creators WHERE creator_type = 'SOLO'`,
-      [],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      []
     );
 
     for (const creator of soloResult.rows) {
@@ -140,8 +135,7 @@ async function insertTestData(conn) {
 
     const groupResult = await conn.execute(
       `SELECT creator_id, creator_name FROM tbl_creators WHERE creator_type = 'GROUP'`,
-      [],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      []
     );
 
     for (const creator of groupResult.rows) {
@@ -158,15 +152,13 @@ async function insertTestData(conn) {
 
   const checkSongs = await conn.execute(
     `SELECT COUNT(*) as cnt FROM tbl_music`,
-    [],
-    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    []
   );
 
   if (checkSongs.rows[0].CNT === 0) {
     const creatorsMap = await conn.execute(
       `SELECT creator_id, creator_name FROM tbl_creators`,
-      [],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      []
     );
 
     const creatorMap = {};

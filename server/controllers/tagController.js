@@ -1,27 +1,38 @@
 const db = require('../db');
 
-// Get all tags
+//
+// タグ一覧取得
+//
 async function getAllTags(req, res) {
-  try {
-    const connection = await db.getConnection();
+  let conn;
 
-    const result = await connection.execute(
-      `SELECT TAG_ID, TAG_NAME, NOTE FROM tbl_tags WHERE deleted_at IS NULL ORDER BY TAG_NAME`,
-      [],
-      { outFormat: db.oracledb.OUT_FORMAT_OBJECT }
+  try {
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
+      `SELECT tag_id, tag_name, note
+       FROM tbl_tags
+       WHERE deleted_at IS NULL
+       ORDER BY tag_name`,
+      []
     );
 
-    await connection.close();
+    res.json(result.rows);
 
-    res.json(result.rows || []);
   } catch (err) {
     console.error('Error getting tags:', err.message);
     res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Create a new tag
+//
+// タグ作成
+//
 async function createTag(req, res) {
+  let conn;
+
   const { tag_name, note } = req.body;
 
   if (!tag_name) {
@@ -29,39 +40,38 @@ async function createTag(req, res) {
   }
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
 
-    const result = await connection.execute(
+    const result = await conn.execute(
       `INSERT INTO tbl_tags (tag_name, note, user_id, created_at)
-       VALUES (:tag_name, :note, 1, SYSDATE)
-       RETURNING tag_id INTO :tag_id`,
-      {
-        tag_name: tag_name,
-        note: note || null,
-        tag_id: { dir: db.oracledb.BIND_OUT, type: db.oracledb.NUMBER }
-      }
+       VALUES ($1, $2, $3, NOW())
+       RETURNING tag_id`,
+      [tag_name, note || null, 1]
     );
 
-    await connection.commit();
-
-    const tagId = result.outBinds.tag_id[0];
-
-    await connection.close();
+    const tagId = result.rows[0].tag_id;
 
     res.status(201).json({
       message: 'Tag created successfully',
       tag_id: tagId,
-      tag_name: tag_name,
+      tag_name,
       note: note || null
     });
+
   } catch (err) {
     console.error('Error creating tag:', err.message);
     res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Update a tag
+//
+// タグ更新
+//
 async function updateTag(req, res) {
+  let conn;
+
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
     return res.status(400).json({ error: 'invalid id' });
@@ -74,70 +84,67 @@ async function updateTag(req, res) {
   }
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
 
-    const result = await connection.execute(
+    const result = await conn.execute(
       `UPDATE tbl_tags
-       SET tag_name = :tag_name, note = :note
-       WHERE tag_id = :tag_id`,
-      {
-        tag_name: tag_name,
-        note: note || null,
-        tag_id: id
-      }
+       SET tag_name = $1,
+           note = $2
+       WHERE tag_id = $3`,
+      [tag_name, note || null, id]
     );
 
-    await connection.commit();
-
-    if (result.rowsAffected === 0) {
-      await connection.close();
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Tag not found' });
     }
-
-    await connection.close();
 
     res.json({
       message: 'Tag updated successfully',
       tag_id: id,
-      tag_name: tag_name,
+      tag_name,
       note: note || null
     });
+
   } catch (err) {
     console.error('Error updating tag:', err.message);
     res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Delete a tag (soft delete)
+//
+// タグ削除（ソフトデリート）
+//
 async function deleteTag(req, res) {
+  let conn;
+
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
     return res.status(400).json({ error: 'invalid id' });
   }
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
 
-    const result = await connection.execute(
+    const result = await conn.execute(
       `UPDATE tbl_tags
-       SET deleted_at = SYSDATE
-       WHERE tag_id = :tag_id`,
-      { tag_id: id }
+       SET deleted_at = NOW()
+       WHERE tag_id = $1`,
+      [id]
     );
 
-    await connection.commit();
-
-    if (result.rowsAffected === 0) {
-      await connection.close();
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Tag not found' });
     }
 
-    await connection.close();
-
     res.json({ message: 'Tag deleted successfully' });
+
   } catch (err) {
     console.error('Error deleting tag:', err.message);
     res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 

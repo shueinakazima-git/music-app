@@ -106,8 +106,9 @@ async function loadSongs() {
       tr.innerHTML = `
         <td>${song.music_title}</td>
         <td>${song.creator_name}</td>
-        <td>${song.bpm} BPM</td>
+        <td>${song.album_name}</td>
         <td>
+          <button class="btn-more">More</button>
           <button class="btn-edit" onclick="openEditModal(${song.music_id}, '${song.music_title.replace(/'/g, "\\'")}', ${song.bpm}, '${song.musical_key ? song.musical_key.replace(/'/g, "\\'") : ''}', ${song.duration_seconds || 0})">Edit</button>
           <button class="btn-delete" onclick="deleteSong(${song.music_id}, '${song.music_title.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
@@ -141,6 +142,7 @@ async function loadAlbums() {
         <td>${releaseDate}</td>
         <td>
           <button class="btn-secondary" onclick="openAddSongsModal(${album.album_id}, '${album.album_name.replace(/'/g, "\\'")}')" style="background: #FF9800;">Add Songs</button>
+          <button class="btn-more">More</button>
           <button class="btn-edit" onclick="openEditAlbumModal(${album.album_id}, '${album.album_name.replace(/'/g, "\\'")}', ${album.creator_id || 0}, '${album.release_date || ''}')">Edit</button>
           <button class="btn-delete" onclick="deleteAlbum(${album.album_id}, '${album.album_name.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
@@ -690,6 +692,7 @@ async function loadTags() {
         <td>${tag.tag_name}</td>
         <td>${tag.note || ''}</td>
         <td>
+          <button class="btn-more">More</button>
           <button class="btn-edit" onclick="openEditTagModal(${tag.tag_id}, '${tag.tag_name.replace(/'/g, "\\'")}', '${(tag.note || '').replace(/'/g, "\\'")}')" style="margin-right: 5px;">Edit</button>
           <button class="btn-delete" onclick="deleteTag(${tag.tag_id}, '${tag.tag_name.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>
@@ -1038,6 +1041,7 @@ async function loadGroups() {
         <td>${group.formation_date ? group.formation_date.substring(0, 10) : ''}</td>
         <td>${group.dissolution_date ? group.dissolution_date.substring(0, 10) : ''}</td>
         <td>
+          <button class="btn-more">More</button>
           <button class="btn-edit" onclick="openEditGroupModal(${group.group_id}, ${group.creator_id}, '${group.group_name.replace(/'/g, "\\'")}', '${(group.formation_date || '').substring(0, 10)}', '${(group.dissolution_date || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
           <button class="btn-delete" onclick="deleteGroup(${group.group_id}, '${group.group_name.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
         </td>

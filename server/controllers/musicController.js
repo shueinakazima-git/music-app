@@ -1,47 +1,55 @@
 const db = require('../db');
-const oracledb = db.oracledb;
+//
+// クリエイター一覧
+//
+exports.getCreators = async (req, res) => {
+  let conn;
+  try {
+    conn = await db.getConnection();
 
+    const result = await conn.execute(
+      `SELECT creator_id, creator_name, creator_type
+       FROM tbl_creators
+       ORDER BY creator_name`,
+      []
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) await conn.close();
+  }
+};
 //
 // 統計情報取得
 //
 exports.getStats = async (req, res) => {
   let conn;
-
-  function firstValue(row) {
-    if (!row) return 0;
-    // try common variants
-    return row.TOTAL ?? row.total ?? row.AVG_BPM ?? row.avg_bpm ?? Object.values(row)[0] ?? 0;
-  }
-
   try {
     conn = await db.getConnection();
 
     const totalSongs = await conn.execute(
-      `SELECT COUNT(*) AS TOTAL FROM tbl_music`,
-      [],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      `SELECT COUNT(*)::int AS total FROM tbl_music`,
+      []
     );
 
     const totalCreators = await conn.execute(
-      `SELECT COUNT(*) AS TOTAL FROM tbl_creators`,
-      [],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      `SELECT COUNT(*)::int AS total FROM tbl_creators`,
+      []
     );
 
     const avgBpm = await conn.execute(
-      `SELECT ROUND(AVG(bpm),1) AS AVG_BPM FROM tbl_music`,
-      [],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      `SELECT ROUND(AVG(bpm),1) AS avg_bpm FROM tbl_music`,
+      []
     );
 
-    const ts = totalSongs.rows && totalSongs.rows[0] ? firstValue(totalSongs.rows[0]) : 0;
-    const tc = totalCreators.rows && totalCreators.rows[0] ? firstValue(totalCreators.rows[0]) : 0;
-    const ab = avgBpm.rows && avgBpm.rows[0] ? firstValue(avgBpm.rows[0]) : 0;
-
     res.json({
-      totalSongs: Number(ts) || 0,
-      totalCreators: Number(tc) || 0,
-      avgBpm: Number(ab) || 0
+      totalSongs: totalSongs.rows[0]?.total || 0,
+      totalCreators: totalCreators.rows[0]?.total || 0,
+      avgBpm: Number(avgBpm.rows[0]?.avg_bpm) || 0
     });
 
   } catch (err) {
@@ -57,7 +65,6 @@ exports.getStats = async (req, res) => {
 //
 exports.getAllMusic = async (req, res) => {
   let conn;
-
   try {
     conn = await db.getConnection();
 
@@ -68,69 +75,26 @@ exports.getAllMusic = async (req, res) => {
         m.music_id,
         m.music_title,
         m.bpm,
-        c.creator_name
+        c.creator_name,
+        a.album_name,
+        t.tag_name
       FROM tbl_music m
-      JOIN tbl_creators c
-        ON m.creator_id = c.creator_id
+      JOIN tbl_creators c ON m.creator_id = c.creator_id
+      LEFT JOIN tbl_album_music am ON m.music_id = am.music_id
+      LEFT JOIN tbl_albums a ON am.album_id = a.album_id
+      LEFT JOIN tbl_music_tags mt ON m.music_id = mt.music_id
+      LEFT JOIN tbl_tags t ON mt.tag_id = t.tag_id
     `;
 
-    let binds = {};
+    const binds = [];
 
     if (creatorId) {
-      sql += " WHERE m.creator_id = :creatorId";
-      binds.creatorId = creatorId;
+      sql += ` WHERE m.creator_id = $1`;
+      binds.push(creatorId);
     }
 
-    const result = await conn.execute(
-      sql,
-      binds,
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
-    );
-
-    const rows = result.rows.map(row => {
-      const obj = {};
-      for (const key in row) {
-        obj[key.toLowerCase()] = row[key];
-      }
-      return obj;
-    });
-
-    // normalize column keys to UPPERCASE so front-end code (which expects
-    // fields like MUSIC_TITLE, CREATOR_NAME) keeps working across DB drivers
-    res.json(rows);
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  } finally {
-    if (conn) await conn.close();
-  }
-};
-
-//
-// クリエイター一覧
-//
-exports.getCreators = async (req, res) => {
-  let conn;
-
-  try {
-    conn = await db.getConnection();
-
-    const result = await conn.execute(
-      `SELECT creator_id, creator_name, creator_type FROM tbl_creators`,
-      [],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
-    );
-
-    const rows = result.rows.map(row => {
-      const obj = {};
-      for (const key in row) {
-        obj[key.toLowerCase()] = row[key];
-      }
-      return obj;
-    });
-
-    res.json(rows);
+    const result = await conn.execute(sql, binds);
+    res.json(result.rows);
 
   } catch (err) {
     console.error(err);
@@ -145,17 +109,16 @@ exports.getCreators = async (req, res) => {
 //
 exports.createMusic = async (req, res) => {
   let conn;
-
   try {
     const { title, creator_id, bpm, musical_key, duration_seconds } = req.body;
+
     conn = await db.getConnection();
 
     await conn.execute(
       `INSERT INTO tbl_music
        (music_title, creator_id, bpm, musical_key, duration_seconds)
-       VALUES (:title, :creator_id, :bpm, :musical_key, :duration_seconds)`,
-      { title, creator_id, bpm, musical_key, duration_seconds },
-      { autoCommit: true }
+       VALUES ($1, $2, $3, $4, $5)`,
+      [title, creator_id, bpm, musical_key, duration_seconds]
     );
 
     res.json({ message: "Inserted successfully" });
@@ -173,7 +136,6 @@ exports.createMusic = async (req, res) => {
 //
 exports.updateMusic = async (req, res) => {
   let conn;
-
   try {
     const id = Number(req.params.id);
     const { title, bpm, musical_key, duration_seconds } = req.body;
@@ -182,13 +144,12 @@ exports.updateMusic = async (req, res) => {
 
     await conn.execute(
       `UPDATE tbl_music
-       SET music_title = :title,
-           bpm = :bpm,
-           musical_key = :musical_key,
-           duration_seconds = :duration_seconds
-       WHERE music_id = :id`,
-      { title, bpm, musical_key, duration_seconds, id },
-      { autoCommit: true }
+       SET music_title = $1,
+           bpm = $2,
+           musical_key = $3,
+           duration_seconds = $4
+       WHERE music_id = $5`,
+      [title, bpm, musical_key, duration_seconds, id]
     );
 
     res.json({ message: "Updated successfully" });
@@ -206,15 +167,14 @@ exports.updateMusic = async (req, res) => {
 //
 exports.deleteMusic = async (req, res) => {
   let conn;
-
   try {
     const id = Number(req.params.id);
+
     conn = await db.getConnection();
-    
+
     await conn.execute(
-      `DELETE FROM tbl_music WHERE music_id = :id`,
-      { id },
-      { autoCommit: true }
+      `DELETE FROM tbl_music WHERE music_id = $1`,
+      [id]
     );
 
     res.json({ message: "Deleted successfully" });
@@ -232,39 +192,26 @@ exports.deleteMusic = async (req, res) => {
 //
 exports.getChordProgression = async (req, res) => {
   let conn;
-
   try {
     const id = Number(req.params.id);
-    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid id' });
+    }
 
     conn = await db.getConnection();
 
-    const sql = `
-      SELECT
-        cp.absolute_tick,
-        c.chord_name
-      FROM tbl_chord_progression cp
-      LEFT JOIN tbl_chords c
-        ON cp.chord_id = c.chord_id
-      WHERE cp.music_id = :id
-      ORDER BY cp.absolute_tick
-    `;
-
     const result = await conn.execute(
-      sql,
-      { id },
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      `SELECT
+         cp.absolute_tick,
+         c.chord_name
+       FROM tbl_chord_progression cp
+       LEFT JOIN tbl_chords c ON cp.chord_id = c.chord_id
+       WHERE cp.music_id = $1
+       ORDER BY cp.absolute_tick`,
+      [id]
     );
 
-    const rows = (result.rows || []).map(row => {
-      const obj = {};
-      for (const key in row) {
-        obj[key.toLowerCase()] = row[key];
-      }
-      return obj;
-    });
-
-    res.json(rows);
+    res.json(result.rows);
 
   } catch (err) {
     console.error(err);
