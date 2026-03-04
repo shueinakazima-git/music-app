@@ -13,7 +13,7 @@ exports.getAllAlbums = async (req, res) => {
          a.album_id,
          a.album_name,
          a.creator_id,
-         a.release_date,
+         TO_CHAR(a.release_date, 'YYYY-MM-DD') AS release_date,
          c.creator_name
        FROM tbl_albums a
        JOIN tbl_creators c

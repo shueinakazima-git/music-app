@@ -13,9 +13,9 @@ async function getAllArtists(req, res) {
          ar.artist_id,
          ar.artist_id AS creator_id,
          c.creator_name AS artist_name,
-         ar.date_of_birth,
-         ar.started_at,
-         ar.ended_at
+         TO_CHAR(ar.date_of_birth, 'YYYY-MM-DD') AS date_of_birth,
+         TO_CHAR(ar.started_at, 'YYYY-MM-DD') AS started_at,
+         TO_CHAR(ar.ended_at, 'YYYY-MM-DD') AS ended_at
        FROM tbl_artists ar
        JOIN tbl_creators c ON ar.artist_id = c.creator_id
        ORDER BY c.creator_name`,

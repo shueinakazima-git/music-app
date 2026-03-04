@@ -75,6 +75,8 @@ exports.getAllMusic = async (req, res) => {
         m.music_id,
         m.music_title,
         m.bpm,
+        m.musical_key,
+        m.duration_seconds,
         c.creator_name,
         a.album_name,
         t.tag_name

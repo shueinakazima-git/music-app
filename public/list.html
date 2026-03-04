@@ -224,7 +224,7 @@
       <form id="addGroupForm">
         <div class="form-group">
           <label for="groupCreatorSelect">Creator (Group):</label>
-          <select id="groupCreatorSelect" required>
+          <select id="groupCreatorSelect">
             <option value="">-- Select a Group Creator --</option>
           </select>
         </div>
@@ -424,12 +424,8 @@
       <h2>Edit Group</h2>
       <form id="editGroupForm">
         <input type="hidden" id="editGroupId">
-        <div class="form-group">
-          <label for="editGroupCreatorSelect">Creator (Group):</label>
-          <select id="editGroupCreatorSelect" required>
-            <option value="">-- Select a Group Creator --</option>
-          </select>
-        </div>
+        <input type="hidden" id="editGroupCreatorId">
+
         <div class="form-group">
           <label for="editGroupName">Group Name:</label>
           <input type="text" id="editGroupName" required disabled>

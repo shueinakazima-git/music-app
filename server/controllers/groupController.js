@@ -14,8 +14,8 @@ async function getAllGroups(req, res) {
          g.group_id,
          g.group_id AS creator_id,
          c.creator_name AS group_name,
-         g.formation_date,
-         g.dissolution_date
+         TO_CHAR(g.formation_date, 'YYYY-MM-DD') AS formation_date,
+         TO_CHAR(g.dissolution_date, 'YYYY-MM-DD') AS dissolution_date
        FROM tbl_groups g
        JOIN tbl_creators c ON g.group_id = c.creator_id
        ORDER BY c.creator_name`,
@@ -110,38 +110,18 @@ async function updateGroup(req, res) {
     return res.status(400).json({ error: 'invalid id' });
   }
 
-  const { creator_id, formation_date, dissolution_date } = req.body;
-
-  if (!creator_id) {
-    return res.status(400).json({ error: 'creator_id is required' });
-  }
+  const { formation_date, dissolution_date } = req.body;
 
   try {
     conn = await db.getConnection();
 
-    const creatorCheck = await conn.execute(
-      `SELECT creator_type
-       FROM tbl_creators
-       WHERE creator_id = $1`,
-      [creator_id]
-    );
-
-    if (creatorCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Creator not found' });
-    }
-
-    if (creatorCheck.rows[0].creator_type !== 'GROUP') {
-      return res.status(400).json({ error: 'Only GROUP creators can be groups' });
-    }
-
     const result = await conn.execute(
       `UPDATE tbl_groups
-       SET group_id = $1,
-           formation_date = $2,
-           dissolution_date = $3
-       WHERE group_id = $4`,
+       SET 
+           formation_date = $1,
+           dissolution_date = $2
+       WHERE group_id = $3`,
       [
-        creator_id,
         formation_date || null,
         dissolution_date || null,
         id
@@ -154,8 +134,7 @@ async function updateGroup(req, res) {
 
     res.json({
       message: 'Group updated successfully',
-      group_id: id,
-      creator_id: creator_id
+      group_id: id
     });
 
   } catch (err) {

@@ -38,12 +38,16 @@ async function loadCreators() {
     // フォーム用セレクト要素を埋める
     const songSelect = document.getElementById('artistSelect');
     const albumSelect = document.getElementById('albumArtistSelect');
+    const editAlbumSelect = document.getElementById('editAlbumCreatorSelect');
     const artistCreatorSelect = document.getElementById('artistCreatorSelect');
     const groupCreatorSelect = document.getElementById('groupCreatorSelect');
-    
+
     // 既存のオプションをクリア（最初のデフォルトオプションは残す）
     while (songSelect.options.length > 1) {
       songSelect.remove(1);
+    }
+    while (editAlbumSelect && editAlbumSelect.options.length > 1) {
+      editAlbumSelect.remove(1);
     }
     while (albumSelect.options.length > 1) {
       albumSelect.remove(1);
@@ -66,6 +70,11 @@ async function loadCreators() {
       option2.value = creator.creator_id;
       option2.textContent = creator.creator_name;
       albumSelect.appendChild(option2);
+
+      const optionEdit = document.createElement('option');
+      optionEdit.value = creator.creator_id;
+      optionEdit.textContent = creator.creator_name;
+      editAlbumSelect.appendChild(optionEdit);
 
       if (creator.creator_type === 'SOLO') {
         const option3 = document.createElement('option');
@@ -354,7 +363,10 @@ function openEditAlbumModal(albumId, albumName, creatorId, releaseDate) {
   document.getElementById('editAlbumId').value = albumId;
   document.getElementById('editAlbumName').value = albumName;
   document.getElementById('editAlbumCreatorSelect').value = creatorId;
-  document.getElementById('editReleaseDate').value = releaseDate || '';
+  const formattedDate = releaseDate
+    ? releaseDate.split('T')[0] // "YYYY-MM-DDTHH:MM:SSZ" -> "YYYY-MM-DD"
+    : '';
+  document.getElementById('editReleaseDate').value = formattedDate;
   
   document.getElementById('editAlbumModal').style.display = 'block';
 }
@@ -1101,11 +1113,15 @@ async function addGroup(event) {
 
 function openEditGroupModal(groupId, creatorId, groupName, formationDate, dissolutionDate) {
   document.getElementById('editGroupId').value = groupId;
-  document.getElementById('editGroupCreatorSelect').value = creatorId;
+  document.getElementById('editGroupCreatorId').value = creatorId;
   document.getElementById('editGroupName').value = groupName;
-  document.getElementById('editGroupFormationDate').value = formationDate;
-  document.getElementById('editGroupDissolutionDate').value = dissolutionDate;
-  
+
+  document.getElementById('editGroupFormationDate').value =
+    formationDate ? formationDate.split('T')[0] : '';
+
+  document.getElementById('editGroupDissolutionDate').value =
+    dissolutionDate ? dissolutionDate.split('T')[0] : '';
+
   document.getElementById('editGroupModal').style.display = 'block';
 }
 
@@ -1117,17 +1133,11 @@ async function updateGroup(event) {
   event.preventDefault();
 
   const groupId = document.getElementById('editGroupId').value;
-  const creatorId = document.getElementById('editGroupCreatorSelect').value;
   const formationDate = document.getElementById('editGroupFormationDate').value || null;
   const dissolutionDate = document.getElementById('editGroupDissolutionDate').value || null;
 
-  if (!creatorId) {
-    alert('Please select a creator');
-    return;
-  }
-
   try {
-    console.log('Updating group:', { groupId, creatorId, formationDate, dissolutionDate });
+    console.log('Updating group:', { groupId, formationDate, dissolutionDate });
 
     const response = await fetch(`/groups/${groupId}`, {
       method: 'PUT',
@@ -1135,7 +1145,6 @@ async function updateGroup(event) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        creator_id: parseInt(creatorId),
         formation_date: formationDate,
         dissolution_date: dissolutionDate
       })
