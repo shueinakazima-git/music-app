@@ -16,6 +16,7 @@
     <button class="tab-button" data-tab="songs">Songs</button>
     <button class="tab-button" data-tab="albums">Albums</button>
     <button class="tab-button" data-tab="tags">Tags</button>
+    <button class="tab-button" data-tab="artists">Artists</button>
     <button class="tab-button" data-tab="groups">Groups</button>
   </div>
 
@@ -256,27 +257,13 @@
     </div>
   </div>
 
-  <!-- クリエイター確認用モーダル -->
-  <div id="moreCreatorModal" class="modal">
+  <!-- 詳細確認用モーダル -->
+  <div id="detailModal" class="modal">
     <div class="modal-content">
-      <span class="close-morecreator">&times;</span>
-      <h2>More Creator</h2>
-      <form id="moreCreatorForm">
-        <input type="hidden" id="moreCreatorId">
-        <div class="form-group">
-          <label for="moreCreatorName">Creator Name:</label>
-          <input type="text" id="moreCreatorName" required>
-        </div>
-        <div class="form-group">
-          <label for="moreCreatorType">Creator Type:</label>
-          <select id="moreCreatorType" required>
-            <option value="">-- Select type --</option>
-            <option value="SOLO">Solo Artist</option>
-            <option value="GROUP">Group/Band</option>
-          </select>
-        </div>
-        <button type="button" class="btn-primary" id="cancelMoreCreator">Cancel</button>
-      </form>
+      <span class="close-detail">&times;</span>
+      <h2 id="detailModalTitle">詳細</h2>
+      <div id="detailModalBody"></div>
+      <button type="button" class="btn-primary" id="closeDetailModal">閉じる</button>
     </div>
   </div>
 
@@ -455,6 +442,44 @@
         <div style="margin-top: 20px;">
           <button type="submit" class="btn-primary">Add Selected Songs</button>
           <button type="button" class="btn-secondary" id="cancelAddSongs">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 曲にタグを紐付けるモーダル -->
+  <div id="addTagsModal" class="modal">
+    <div class="modal-content">
+      <span class="close-tags">&times;</span>
+      <h2>曲にタグを紐付け: <span id="addTagsMusicName"></span></h2>
+      <form id="addTagsForm">
+        <input type="hidden" id="addTagsMusicId">
+        <h3>現在のタグ</h3>
+        <div id="linkedTagsList"></div>
+        <h3 style="margin-top: 16px;">追加可能なタグ</h3>
+        <div id="availableTagsList"></div>
+        <div style="margin-top: 20px;">
+          <button type="submit" class="btn-primary">選択したタグを追加</button>
+          <button type="button" class="btn-secondary" id="cancelAddTags">キャンセル</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- グループにアーティストを追加するモーダル -->
+  <div id="addMembersModal" class="modal">
+    <div class="modal-content">
+      <span class="close-members">&times;</span>
+      <h2>グループにアーティスト追加: <span id="addMembersGroupName"></span></h2>
+      <form id="addMembersForm">
+        <input type="hidden" id="addMembersGroupId">
+        <h3>現在のメンバー</h3>
+        <div id="groupMembersList"></div>
+        <h3 style="margin-top: 16px;">追加可能なアーティスト</h3>
+        <div id="availableArtistsList"></div>
+        <div style="margin-top: 20px;">
+          <button type="submit" class="btn-primary">選択したアーティストを追加</button>
+          <button type="button" class="btn-secondary" id="cancelAddMembers">キャンセル</button>
         </div>
       </form>
     </div>

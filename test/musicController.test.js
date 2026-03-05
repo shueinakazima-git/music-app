@@ -48,7 +48,7 @@ test('getChordProgression returns 400 for invalid id', async (t) => {
     await controller.getChordProgression(req, res);
 
     assert.strictEqual(res._status, 400);
-    assert.deepStrictEqual(res._json, { error: 'Invalid id' });
+    assert.deepStrictEqual(res._json, { error: 'IDが不正です' });
   });
 });
 

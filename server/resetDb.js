@@ -6,7 +6,7 @@ async function resetDatabase() {
     conn = await db.getConnection();
     const isPg = db.dbType === 'postgres';
 
-    console.log('Connected to database. Starting reset...\n');
+    console.log('データベースに接続しました。リセットを開始します...\n');
 
     // テーブルをDROP（外部キー制約のため逆順）
     const tables = [
@@ -33,27 +33,27 @@ async function resetDatabase() {
         : `DROP TABLE ${table}`;
       try {
         await conn.execute(sql);
-        console.log(`✓ Dropped ${table}`);
+        console.log(`✓ ${table} を削除しました`);
       } catch (err) {
         if (!isPg && err.errorNum === 942) {
-          console.log(`  ${table} does not exist (skipping)`);
+          console.log(`  ${table} は存在しないためスキップします`);
         } else {
           throw err;
         }
       }
     }
 
-    console.log('\n✅ Database reset completed!\n');
-    console.log('Now run: node server/initDb.js');
+    console.log('\n✅ データベースのリセットが完了しました！\n');
+    console.log('次を実行してください: node server/initDb.js');
 
   } catch (err) {
-    console.error('❌ Error:', err.message || err);
+    console.error('❌ エラー:', err.message || err);
   } finally {
     if (conn) {
       try {
         await conn.close();
       } catch (err) {
-        console.error('Error closing connection:', err);
+        console.error('接続クローズエラー:', err);
       }
     }
   }

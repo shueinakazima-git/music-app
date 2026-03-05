@@ -317,6 +317,34 @@ button {
   color: #000;
 }
 
+.close-tags {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: -5px;
+}
+
+.close-tags:hover,
+.close-tags:focus {
+  color: #000;
+}
+
+.close-members {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: -5px;
+}
+
+.close-members:hover,
+.close-members:focus {
+  color: #000;
+}
+
 /* チェックボックススタイル */
 input[type="checkbox"] {
   margin-right: 10px;

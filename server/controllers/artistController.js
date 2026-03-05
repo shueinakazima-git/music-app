@@ -25,8 +25,8 @@ async function getAllArtists(req, res) {
     res.json(result.rows);
 
   } catch (err) {
-    console.error('Error getting artists:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('アーティスト取得エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -40,7 +40,7 @@ async function createArtist(req, res) {
   const { creator_id, date_of_birth, started_at, ended_at } = req.body;
 
   if (!creator_id) {
-    return res.status(400).json({ error: 'creator_id is required' });
+    return res.status(400).json({ error: 'クリエイターIDは必須です' });
   }
 
   try {
@@ -55,11 +55,11 @@ async function createArtist(req, res) {
     );
 
     if (creatorCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Creator not found' });
+      return res.status(400).json({ error: 'クリエイターが見つかりません' });
     }
 
     if (creatorCheck.rows[0].creator_type !== 'SOLO') {
-      return res.status(400).json({ error: 'Only SOLO creators can be artists' });
+      return res.status(400).json({ error: 'SOLOタイプのクリエイターのみアーティスト登録できます' });
     }
 
     // 既存artist確認
@@ -71,7 +71,7 @@ async function createArtist(req, res) {
     );
 
     if (artistCheck.rows.length > 0) {
-      return res.status(400).json({ error: 'Artist already exists for this creator' });
+      return res.status(400).json({ error: 'このクリエイターのアーティストは既に存在します' });
     }
 
     await conn.execute(
@@ -88,14 +88,14 @@ async function createArtist(req, res) {
     );
 
     res.status(201).json({
-      message: 'Artist created successfully',
+      message: 'アーティストを作成しました',
       artist_id: creator_id,
       creator_id: creator_id
     });
 
   } catch (err) {
-    console.error('Error creating artist:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('アーティスト作成エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -109,13 +109,13 @@ async function updateArtist(req, res) {
 
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'invalid id' });
+    return res.status(400).json({ error: 'IDが不正です' });
   }
 
   const { creator_id, date_of_birth, started_at, ended_at } = req.body;
 
   if (!creator_id) {
-    return res.status(400).json({ error: 'creator_id is required' });
+    return res.status(400).json({ error: 'クリエイターIDは必須です' });
   }
 
   try {
@@ -129,11 +129,11 @@ async function updateArtist(req, res) {
     );
 
     if (creatorCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Creator not found' });
+      return res.status(400).json({ error: 'クリエイターが見つかりません' });
     }
 
     if (creatorCheck.rows[0].creator_type !== 'SOLO') {
-      return res.status(400).json({ error: 'Only SOLO creators can be artists' });
+      return res.status(400).json({ error: 'SOLOタイプのクリエイターのみアーティスト登録できます' });
     }
 
     const result = await conn.execute(
@@ -147,18 +147,18 @@ async function updateArtist(req, res) {
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Artist not found' });
+      return res.status(404).json({ error: 'アーティストが見つかりません' });
     }
 
     res.json({
-      message: 'Artist updated successfully',
+      message: 'アーティストを更新しました',
       artist_id: id,
       creator_id: creator_id
     });
 
   } catch (err) {
-    console.error('Error updating artist:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('アーティスト更新エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -172,7 +172,7 @@ async function deleteArtist(req, res) {
 
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'invalid id' });
+    return res.status(400).json({ error: 'IDが不正です' });
   }
 
   try {
@@ -184,14 +184,14 @@ async function deleteArtist(req, res) {
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Artist not found' });
+      return res.status(404).json({ error: 'アーティストが見つかりません' });
     }
 
-    res.json({ message: 'Artist deleted successfully' });
+    res.json({ message: 'アーティストを削除しました' });
 
   } catch (err) {
-    console.error('Error deleting artist:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('アーティスト削除エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }

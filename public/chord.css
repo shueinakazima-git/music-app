@@ -1,56 +1,67 @@
 /* ===== Chord Viewer 用スタイル ===== */
-#chordDisplay { 
-  margin-top: 20px; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 10px; 
+#chordDisplay {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
 }
 
-.bar { 
-  display: flex; 
-  gap: 5px; 
-  flex-wrap: nowrap; 
-  align-items: center; 
-  overflow-x: auto; 
-  padding-bottom: 5px;
+.chord-sheet {
+  margin-top: 12px;
+  width: 100%;
+  max-width: 920px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.bar-label { 
-  font-weight: bold; 
-  margin-right: 5px; 
-  white-space: nowrap; 
-  flex-shrink: 0;
+.sheet-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr);
+  gap: 10px;
 }
 
-.chord-box { 
-  padding: 6px 10px; 
-  border: 1px solid #aaa; 
-  border-radius: 5px; 
-  background-color: #f0f0f0; 
-  font-weight: bold; 
-  text-align: center;
-  white-space: nowrap; 
-  flex-shrink: 0; 
-  transition: background 0.2s ease;
-}
-
-.chord-box.current { 
-  background-color: #2196F3; 
-  color: white; 
-}
-
-/* コード進行表示用 */
-.chord-grid {
-  margin-top: 15px;
-  font-size: 20px;
-  line-height: 1.8;
-}
-
-.chord-grid span {
-  display: inline-block;
-  margin-right: 15px;
-  font-weight: bold;
-  padding: 2px 4px;
-  background: #f0f0f0;
+.bar-cell {
+  position: relative;
+  background: #fff;
   border-radius: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.chord-layer {
+  position: relative;
+  min-height: calc(26px * var(--lane-count, 1) + 12px);
+}
+
+.measure-layer {
+  position: relative;
+  height: 40px;
+  border-left: 2px solid #444;
+  border-right: 2px solid #444;
+  border-top: 1px solid #bbb;
+  border-bottom: 1px solid #bbb;
+  border-radius: 4px;
+}
+
+.beat-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #e8e8e8;
+}
+
+.bar-chord {
+  position: absolute;
+  font-family: "Menlo", "Consolas", "Monaco", monospace;
+  font-size: 15px;
+  font-weight: 700;
+  background: #f3f3f3;
+  border: 1px solid #cfcfcf;
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
 }

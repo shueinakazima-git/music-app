@@ -1,21 +1,28 @@
 const { test } = require('node:test');
 const assert = require('assert');
 const db = require('../server/db');
+const { Pool } = require('pg');
 
-if (db.dbType === 'postgres') {
-  test('convertSqlForPostgres translates named binds to $1 etc', () => {
-    const { text, values } = db._convertSqlForPostgres(
-      'SELECT * FROM tbl WHERE a = :a AND b = :b',
-      { a: 1, b: 2 }
+test('db.execute rejects non-array bind values', async () => {
+  const originalConnect = Pool.prototype.connect;
+
+  Pool.prototype.connect = async function connectMock() {
+    return {
+      query: async () => ({ rows: [], rowCount: 0 }),
+      release: () => {}
+    };
+  };
+
+  try {
+    const conn = await db.getConnection();
+
+    await assert.rejects(
+      () => conn.execute('SELECT 1', { not: 'array' }),
+      /bind values to be an array/
     );
-    assert.strictEqual(text, 'SELECT * FROM tbl WHERE a = $1 AND b = $2');
-    assert.deepStrictEqual(values, [1, 2]);
-  });
-} else {
-  test('convertSqlForPostgres leaves SQL untouched when not postgres', () => {
-    const { text, values } = db._convertSqlForPostgres('foo', { foo: 'bar' });
-    assert.strictEqual(text, 'foo');
-    // the helper still returns an array of values based on the binds
-    assert.deepStrictEqual(values, ['bar']);
-  });
-}
+
+    await conn.close();
+  } finally {
+    Pool.prototype.connect = originalConnect;
+  }
+});

@@ -18,7 +18,7 @@ exports.getCreators = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -54,7 +54,7 @@ exports.getStats = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -100,7 +100,42 @@ exports.getAllMusic = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
+  }
+};
+
+//
+// コード進行が登録されている楽曲のみ取得
+//
+exports.getMusicWithChords = async (req, res) => {
+  let conn;
+  try {
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
+      `SELECT DISTINCT
+         m.music_id,
+         m.music_title,
+         c.creator_name
+       FROM tbl_music m
+       JOIN tbl_creators c
+         ON m.creator_id = c.creator_id
+       WHERE EXISTS (
+         SELECT 1
+         FROM tbl_chord_progression cp
+         WHERE cp.music_id = m.music_id
+       )
+       ORDER BY m.music_title`,
+      []
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -123,11 +158,11 @@ exports.createMusic = async (req, res) => {
       [title, creator_id, bpm, musical_key, duration_seconds]
     );
 
-    res.json({ message: "Inserted successfully" });
+    res.json({ message: '楽曲を登録しました' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -154,11 +189,11 @@ exports.updateMusic = async (req, res) => {
       [title, bpm, musical_key, duration_seconds, id]
     );
 
-    res.json({ message: "Updated successfully" });
+    res.json({ message: '楽曲を更新しました' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -179,11 +214,11 @@ exports.deleteMusic = async (req, res) => {
       [id]
     );
 
-    res.json({ message: "Deleted successfully" });
+    res.json({ message: '楽曲を削除しました' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -197,7 +232,7 @@ exports.getChordProgression = async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid id' });
+      return res.status(400).json({ error: 'IDが不正です' });
     }
 
     conn = await db.getConnection();
@@ -217,7 +252,164 @@ exports.getChordProgression = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
+  }
+};
+
+//
+// 曲に紐付け可能なタグ一覧取得
+//
+exports.getMusicTags = async (req, res) => {
+  let conn;
+  try {
+    const musicId = Number(req.params.id);
+    if (Number.isNaN(musicId)) {
+      return res.status(400).json({ error: 'IDが不正です' });
+    }
+
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
+      `SELECT
+         t.tag_id,
+         t.tag_name,
+         t.note
+       FROM tbl_music_tags mt
+       JOIN tbl_tags t
+         ON mt.tag_id = t.tag_id
+       WHERE mt.music_id = $1
+         AND t.deleted_at IS NULL
+       ORDER BY t.tag_name`,
+      [musicId]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
+  }
+};
+
+//
+// 曲に紐付け可能なタグ一覧取得
+//
+exports.getAvailableTags = async (req, res) => {
+  let conn;
+  try {
+    const musicId = Number(req.params.id);
+    if (Number.isNaN(musicId)) {
+      return res.status(400).json({ error: 'IDが不正です' });
+    }
+
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
+      `SELECT
+         t.tag_id,
+         t.tag_name,
+         t.note
+       FROM tbl_tags t
+       WHERE t.deleted_at IS NULL
+         AND t.tag_id NOT IN (
+           SELECT mt.tag_id
+           FROM tbl_music_tags mt
+           WHERE mt.music_id = $1
+         )
+       ORDER BY t.tag_name`,
+      [musicId]
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
+  }
+};
+
+//
+// 曲にタグを紐付け
+//
+exports.addTagsToMusic = async (req, res) => {
+  let conn;
+  try {
+    const musicId = Number(req.params.id);
+    if (Number.isNaN(musicId)) {
+      return res.status(400).json({ error: 'IDが不正です' });
+    }
+
+    const { tag_ids } = req.body || {};
+    if (!Array.isArray(tag_ids) || tag_ids.length === 0) {
+      return res.status(400).json({ error: 'タグが指定されていません' });
+    }
+
+    const uniqueTagIds = [...new Set(tag_ids.map((id) => Number(id)).filter((id) => !Number.isNaN(id)))];
+    if (uniqueTagIds.length === 0) {
+      return res.status(400).json({ error: 'タグが指定されていません' });
+    }
+
+    conn = await db.getConnection();
+    await conn.execute('BEGIN');
+
+    for (const tagId of uniqueTagIds) {
+      await conn.execute(
+        `INSERT INTO tbl_music_tags (music_id, tag_id, created_at)
+         VALUES ($1, $2, CURRENT_TIMESTAMP)
+         ON CONFLICT (music_id, tag_id) DO NOTHING`,
+        [musicId, tagId]
+      );
+    }
+
+    await conn.execute('COMMIT');
+
+    res.json({ message: '曲にタグを紐付けました' });
+
+  } catch (err) {
+    console.error(err);
+    if (conn) await conn.execute('ROLLBACK');
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
+  }
+};
+
+//
+// 曲からタグを紐付け解除
+//
+exports.removeTagFromMusic = async (req, res) => {
+  let conn;
+  try {
+    const musicId = Number(req.params.musicId);
+    const tagId = Number(req.params.tagId);
+    if (Number.isNaN(musicId) || Number.isNaN(tagId)) {
+      return res.status(400).json({ error: 'IDが不正です' });
+    }
+
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
+      `DELETE FROM tbl_music_tags
+       WHERE music_id = $1
+         AND tag_id = $2`,
+      [musicId, tagId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: '紐付けが見つかりません' });
+    }
+
+    res.json({ message: 'タグの紐付けを解除しました' });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }

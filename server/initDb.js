@@ -20,7 +20,7 @@ async function initializeDatabase() {
     conn = await db.getConnection();
     const isPg = db.dbType === 'postgres';
 
-    console.log(`Connected to ${db.dbType} database`);
+    console.log(`${db.dbType}データベースに接続しました`);
 
     // load canonical DDL
     const ddlPath = path.join(__dirname, '..', 'doc', 'query.sql');
@@ -39,14 +39,14 @@ async function initializeDatabase() {
       try {
         await conn.execute(stmt);
         const firstLine = stmt.split('\n')[0];
-        console.log(`Executed: ${firstLine}`);
+        console.log(`実行: ${firstLine}`);
       } catch (err) {
         if (isPg && err.code === '42P07') {
-          console.log('  (already exists)');
+          console.log('  （既に存在します）');
           continue;
         }
         if (!isPg && err.errorNum === 955) {
-          console.log('  (already exists)');
+          console.log('  （既に存在します）');
           continue;
         }
         throw err;
@@ -56,9 +56,9 @@ async function initializeDatabase() {
     // insert some sample data if the tables are empty
     await insertTestData(conn);
 
-    console.log('\n✅ Database initialized successfully!');
+    console.log('\n✅ データベース初期化に成功しました！');
   } catch (err) {
-    console.error('Error during initialization:', err);
+    console.error('初期化エラー:', err);
   } finally {
     if (conn) await conn.close();
   }
@@ -67,7 +67,7 @@ async function initializeDatabase() {
 async function insertTestData(conn) {
   const oracledb = db.oracledb;
 
-  console.log('\nInserting test data...');
+  console.log('\nテストデータを挿入しています...');
 
   const checkUsers = await conn.execute(
     `SELECT COUNT(*) as cnt FROM tbl_users`,
@@ -79,7 +79,7 @@ async function insertTestData(conn) {
       { name: 'John Doe', dob: new Date('1990-01-15') },
       { autoCommit: true }
     );
-    console.log('User inserted');
+    console.log('ユーザーを挿入しました');
   }
 
   const checkCreators = await conn.execute(
@@ -115,7 +115,7 @@ async function insertTestData(conn) {
       );
     }
 
-    console.log('Creators inserted');
+    console.log('クリエイターを挿入しました');
 
     const soloResult = await conn.execute(
       `SELECT creator_id, creator_name FROM tbl_creators WHERE creator_type = 'SOLO'`,
@@ -131,7 +131,7 @@ async function insertTestData(conn) {
       );
     }
 
-    console.log('Artists inserted');
+    console.log('アーティストを挿入しました');
 
     const groupResult = await conn.execute(
       `SELECT creator_id, creator_name FROM tbl_creators WHERE creator_type = 'GROUP'`,
@@ -147,7 +147,7 @@ async function insertTestData(conn) {
       );
     }
 
-    console.log('Groups inserted');
+    console.log('グループを挿入しました');
   }
 
   const checkSongs = await conn.execute(
@@ -197,7 +197,7 @@ async function insertTestData(conn) {
       }
     }
 
-    console.log('Songs inserted');
+    console.log('楽曲を挿入しました');
   }
 }
 

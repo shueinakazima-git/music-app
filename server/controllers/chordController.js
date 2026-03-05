@@ -6,7 +6,7 @@ exports.getChordProgression = async (req, res) => {
   try {
     const musicId = Number(req.params.id);
     if (Number.isNaN(musicId)) {
-      return res.status(400).json({ error: 'Invalid id' });
+      return res.status(400).json({ error: 'IDが不正です' });
     }
 
     conn = await db.getConnection();
@@ -29,7 +29,7 @@ exports.getChordProgression = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'DB error' });
+    res.status(500).json({ error: 'データベースエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }

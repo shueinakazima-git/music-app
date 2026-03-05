@@ -16,6 +16,7 @@ const creatorController = require('./controllers/creatorController');
 const tagController = require('./controllers/tagController');
 const artistController = require('./controllers/artistController');
 const groupController = require('./controllers/groupController');
+const setlistController = require('./controllers/setlistController');
 
 app.use('/music', musicRoutes);
 
@@ -50,7 +51,17 @@ app.get('/groups', groupController.getAllGroups);
 app.post('/groups', groupController.createGroup);
 app.put('/groups/:id', groupController.updateGroup);
 app.delete('/groups/:id', groupController.deleteGroup);
+app.get('/groups/:id/members', groupController.getGroupMembers);
+app.get('/groups/:id/available-artists', groupController.getAvailableArtists);
+app.post('/groups/:id/members', groupController.addMembersToGroup);
 
-app.listen(3000, () => {
-  console.log('Server started on port 3000');
+// セットリストエンドポイント
+app.get('/setlists/options', setlistController.getSetlistOptions);
+app.post('/setlists/generate', setlistController.generateSetlist);
+app.post('/setlists', setlistController.saveSetlist);
+
+const port = Number(process.env.PORT) || 3000;
+
+app.listen(port, () => {
+  console.log(`ポート${port}でサーバーを起動しました`);
 });

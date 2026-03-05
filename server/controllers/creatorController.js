@@ -16,7 +16,7 @@ exports.getAllCreators = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -30,7 +30,7 @@ exports.createCreator = async (req, res) => {
     const creatorType = (type || creator_type || 'SOLO').trim();
 
     if (!creatorName) {
-      return res.status(400).json({ error: 'creator_name is required' });
+      return res.status(400).json({ error: 'クリエイター名は必須です' });
     }
 
     conn = await db.getConnection();
@@ -45,13 +45,13 @@ exports.createCreator = async (req, res) => {
     const creatorId = result.rows[0].creator_id;
 
     res.json({
-      message: 'Creator inserted successfully',
+      message: 'クリエイターを登録しました',
       creator_id: creatorId
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -62,7 +62,7 @@ exports.updateCreator = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) {
-      return res.status(400).json({ error: 'invalid id' });
+      return res.status(400).json({ error: 'IDが不正です' });
     }
 
     const { name, creator_name, type, creator_type } = req.body || {};
@@ -70,7 +70,7 @@ exports.updateCreator = async (req, res) => {
     const creatorType = (type || creator_type || '').trim();
 
     if (!creatorName && !creatorType) {
-      return res.status(400).json({ error: 'nothing to update' });
+      return res.status(400).json({ error: '更新対象がありません' });
     }
 
     conn = await db.getConnection();
@@ -99,11 +99,11 @@ exports.updateCreator = async (req, res) => {
       values
     );
 
-    res.json({ message: 'Creator updated successfully' });
+    res.json({ message: 'クリエイターを更新しました' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -114,7 +114,7 @@ exports.deleteCreator = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) {
-      return res.status(400).json({ error: 'invalid id' });
+      return res.status(400).json({ error: 'IDが不正です' });
     }
 
     conn = await db.getConnection();
@@ -125,11 +125,11 @@ exports.deleteCreator = async (req, res) => {
       [id]
     );
 
-    res.json({ message: 'Creator deleted successfully' });
+    res.json({ message: 'クリエイターを削除しました' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }

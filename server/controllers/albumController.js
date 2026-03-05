@@ -26,7 +26,7 @@ exports.getAllAlbums = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -41,7 +41,7 @@ exports.createAlbum = async (req, res) => {
     const { album_name, creator_id, release_date } = req.body || {};
 
     if (!album_name || !album_name.toString().trim()) {
-      return res.status(400).json({ error: 'album_name is required' });
+      return res.status(400).json({ error: 'アルバム名は必須です' });
     }
 
     conn = await db.getConnection();
@@ -52,11 +52,11 @@ exports.createAlbum = async (req, res) => {
       [album_name, creator_id, release_date]
     );
 
-    res.json({ message: "Album inserted successfully" });
+    res.json({ message: 'アルバムを登録しました' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -70,7 +70,7 @@ exports.updateAlbum = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) {
-      return res.status(400).json({ error: 'invalid id' });
+      return res.status(400).json({ error: 'IDが不正です' });
     }
 
     const { album_name, creator_id, release_date } = req.body;
@@ -86,11 +86,11 @@ exports.updateAlbum = async (req, res) => {
       [album_name, creator_id, release_date, id]
     );
 
-    res.json({ message: "Album updated successfully" });
+    res.json({ message: 'アルバムを更新しました' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -104,7 +104,7 @@ exports.deleteAlbum = async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) {
-      return res.status(400).json({ error: 'invalid id' });
+      return res.status(400).json({ error: 'IDが不正です' });
     }
 
     conn = await db.getConnection();
@@ -114,11 +114,11 @@ exports.deleteAlbum = async (req, res) => {
       [id]
     );
 
-    res.json({ message: "Album deleted successfully" });
+    res.json({ message: 'アルバムを削除しました' });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -132,7 +132,7 @@ exports.getAvailableSongs = async (req, res) => {
   try {
     const albumId = parseInt(req.params.id, 10);
     if (Number.isNaN(albumId)) {
-      return res.status(400).json({ error: 'invalid album id' });
+      return res.status(400).json({ error: 'アルバムIDが不正です' });
     }
 
     conn = await db.getConnection();
@@ -156,7 +156,7 @@ exports.getAvailableSongs = async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
@@ -170,13 +170,13 @@ exports.addSongsToAlbum = async (req, res) => {
   try {
     const albumId = parseInt(req.params.id, 10);
     if (Number.isNaN(albumId)) {
-      return res.status(400).json({ error: 'invalid album id' });
+      return res.status(400).json({ error: 'アルバムIDが不正です' });
     }
 
     const { music_ids } = req.body;
 
     if (!Array.isArray(music_ids) || music_ids.length === 0) {
-      return res.status(400).json({ error: "No songs provided" });
+      return res.status(400).json({ error: '楽曲が指定されていません' });
     }
 
     conn = await db.getConnection();
@@ -202,12 +202,12 @@ exports.addSongsToAlbum = async (req, res) => {
 
     await conn.execute("COMMIT");
 
-    res.json({ message: "Songs added to album successfully" });
+    res.json({ message: 'アルバムに楽曲を追加しました' });
 
   } catch (err) {
     console.error(err);
     if (conn) await conn.execute("ROLLBACK");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {
     if (conn) await conn.close();
   }
