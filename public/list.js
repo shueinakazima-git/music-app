@@ -1,89 +1,283 @@
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeForSingleQuote(value) {
+  return String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n');
+}
+
+const detailData = {
+  creators: new Map(),
+  songs: new Map(),
+  albums: new Map(),
+  tags: new Map(),
+  artists: new Map(),
+  groups: new Map()
+};
+
+function toDetailValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return '未設定';
+  }
+  return String(value);
+}
+
+function openDetailModal(title, fields) {
+  const modal = document.getElementById('detailModal');
+  const titleEl = document.getElementById('detailModalTitle');
+  const body = document.getElementById('detailModalBody');
+
+  if (!modal || !titleEl || !body) return;
+
+  titleEl.textContent = title;
+  body.innerHTML = '';
+
+  fields.forEach((field) => {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.textContent = field.label;
+
+    const value = document.createElement('input');
+    value.type = 'text';
+    value.readOnly = true;
+    value.value = toDetailValue(field.value);
+
+    group.appendChild(label);
+    group.appendChild(value);
+    body.appendChild(group);
+  });
+
+  modal.style.display = 'block';
+}
+
+function closeDetailModal() {
+  const modal = document.getElementById('detailModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function openCreatorDetail(creatorId) {
+  const creator = detailData.creators.get(Number(creatorId));
+  if (!creator) return;
+
+  openDetailModal('クリエイター詳細', [
+    { label: 'ID', value: creator.creator_id },
+    { label: '名前', value: creator.creator_name },
+    { label: '種別', value: creator.creator_type === 'SOLO' ? 'Solo Artist' : 'Group/Band' }
+  ]);
+}
+
+function openSongDetail(musicId) {
+  const song = detailData.songs.get(Number(musicId));
+  if (!song) return;
+
+  openDetailModal('楽曲詳細', [
+    { label: 'ID', value: song.music_id },
+    { label: 'タイトル', value: song.music_title },
+    { label: 'アーティスト', value: song.creator_name },
+    { label: 'BPM', value: song.bpm },
+    { label: 'キー', value: song.musical_key },
+    { label: '再生時間(秒)', value: song.duration_seconds },
+    { label: 'アルバム', value: song.album_name },
+    { label: 'タグ', value: song.tag_name }
+  ]);
+}
+
+function openAlbumDetail(albumId) {
+  const album = detailData.albums.get(Number(albumId));
+  if (!album) return;
+
+  openDetailModal('アルバム詳細', [
+    { label: 'ID', value: album.album_id },
+    { label: 'アルバム名', value: album.album_name },
+    { label: 'アーティスト', value: album.creator_name },
+    { label: 'リリース日', value: album.release_date }
+  ]);
+}
+
+function openTagDetail(tagId) {
+  const tag = detailData.tags.get(Number(tagId));
+  if (!tag) return;
+
+  openDetailModal('タグ詳細', [
+    { label: 'ID', value: tag.tag_id },
+    { label: 'タグ名', value: tag.tag_name },
+    { label: 'メモ', value: tag.note }
+  ]);
+}
+
+function openArtistDetail(artistId) {
+  const artist = detailData.artists.get(Number(artistId));
+  if (!artist) return;
+
+  openDetailModal('アーティスト詳細', [
+    { label: 'ID', value: artist.artist_id },
+    { label: '名前', value: artist.artist_name },
+    { label: '生年月日', value: artist.date_of_birth },
+    { label: '活動開始日', value: artist.started_at },
+    { label: '活動終了日', value: artist.ended_at }
+  ]);
+}
+
+function openGroupDetail(groupId) {
+  const group = detailData.groups.get(Number(groupId));
+  if (!group) return;
+
+  openDetailModal('グループ詳細', [
+    { label: 'ID', value: group.group_id },
+    { label: 'グループ名', value: group.group_name },
+    { label: '結成年', value: group.formation_date },
+    { label: '解散日', value: group.dissolution_date }
+  ]);
+}
+
+async function requestWithText(url, options = {}) {
+  const response = await fetch(url, options);
+  const responseText = await response.text();
+  return { response, responseText };
+}
+
+async function runMutation({
+  url,
+  method,
+  body,
+  successMessage,
+  failureLabel,
+  onSuccess
+}) {
+  const options = { method };
+  if (body !== undefined) {
+    options.headers = { 'Content-Type': 'application/json' };
+    options.body = JSON.stringify(body);
+  }
+
+  const { response, responseText } = await requestWithText(url, options);
+  console.log('レスポンスステータス:', response.status);
+
+  if (!response.ok) {
+    alert(`${failureLabel}: ${response.status} - ${responseText}`);
+    return false;
+  }
+
+  if (successMessage) {
+    alert(successMessage);
+  }
+
+  if (onSuccess) {
+    await onSuccess();
+  }
+
+  return true;
+}
+
+async function createCreatorWithType(name, type) {
+  const response = await fetch('/creators', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      creator_name: name,
+      creator_type: type
+    })
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (err) {
+    payload = null;
+  }
+
+  return { response, payload };
+}
+
 async function loadCreators() {
   try {
     const res = await fetch('/music/creators');
-    
+
     if (!res.ok) {
-      console.error('Failed to load creators. Status:', res.status);
-      alert('Failed to load artists. Please refresh the page.');
+      console.error('クリエイター読み込み失敗。ステータス:', res.status);
+      alert('アーティストの読み込みに失敗しました。ページを再読み込みしてください。');
       return;
     }
 
     const creators = await res.json();
     
     if (!Array.isArray(creators) || creators.length === 0) {
-      console.warn('No creators found');
-      alert('No artists found in database');
+      console.warn('クリエイターが見つかりません');
+      alert('データベースにアーティストが見つかりません。');
       return;
     }
 
-    // テーブル表示
+    // テーブル表示（Creatorsタブがある場合のみ）
     const tbody = document.getElementById('creatorList');
-    tbody.innerHTML = "";
+    detailData.creators.clear();
+    if (tbody) {
+      tbody.innerHTML = '';
 
-    creators.forEach(creator => {
-      const tr = document.createElement('tr');
-      const typeLabel = creator.CREATOR_TYPE === 'SOLO' ? 'Solo Artist' : 'Group/Band';
-      tr.innerHTML = `
-        <td>${creator.CREATOR_NAME}</td>
-        <td>${typeLabel}</td>
-        <td>
-          <button class="btn-edit" onclick="openEditCreatorModal(${creator.CREATOR_ID}, '${creator.CREATOR_NAME.replace(/'/g, "\\'")}', '${creator.CREATOR_TYPE}')">Edit</button>
-          <button class="btn-delete" onclick="deleteCreator(${creator.CREATOR_ID}, '${creator.CREATOR_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+      creators.forEach(creator => {
+        detailData.creators.set(Number(creator.creator_id), creator);
+        const tr = document.createElement('tr');
+        const typeLabel = creator.creator_type === 'SOLO' ? 'Solo Artist' : 'Group/Band';
+        const creatorName = escapeHtml(creator.creator_name);
+        tr.innerHTML = `
+          <td>${creatorName}</td>
+          <td>${escapeHtml(typeLabel)}</td>
+          <td>
+            <button class="btn-more" onclick="openCreatorDetail(${creator.creator_id})">More</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
 
     // フォーム用セレクト要素を埋める
     const songSelect = document.getElementById('artistSelect');
     const albumSelect = document.getElementById('albumArtistSelect');
-    const artistCreatorSelect = document.getElementById('artistCreatorSelect');
-    const groupCreatorSelect = document.getElementById('groupCreatorSelect');
-    
+    const editAlbumSelect = document.getElementById('editAlbumCreatorSelect');
+    if (!songSelect || !albumSelect) {
+      return;
+    }
+
     // 既存のオプションをクリア（最初のデフォルトオプションは残す）
-    while (songSelect.options.length > 1) {
-      songSelect.remove(1);
-    }
-    while (albumSelect.options.length > 1) {
-      albumSelect.remove(1);
-    }
-    while (artistCreatorSelect.options.length > 1) {
-      artistCreatorSelect.remove(1);
-    }
-    while (groupCreatorSelect.options.length > 1) {
-      groupCreatorSelect.remove(1);
-    }
+    while (songSelect.options.length > 1) songSelect.remove(1);
+    while (albumSelect.options.length > 1) albumSelect.remove(1);
+    while (editAlbumSelect && editAlbumSelect.options.length > 1) editAlbumSelect.remove(1);
 
     // SOLOとGROUPで分ける
     creators.forEach(creator => {
       const option1 = document.createElement('option');
-      option1.value = creator.CREATOR_ID;
-      option1.textContent = creator.CREATOR_NAME;
+      option1.value = creator.creator_id;
+      option1.textContent = creator.creator_name;
       songSelect.appendChild(option1);
 
       const option2 = document.createElement('option');
-      option2.value = creator.CREATOR_ID;
-      option2.textContent = creator.CREATOR_NAME;
+      option2.value = creator.creator_id;
+      option2.textContent = creator.creator_name;
       albumSelect.appendChild(option2);
 
-      if (creator.CREATOR_TYPE === 'SOLO') {
-        const option3 = document.createElement('option');
-        option3.value = creator.CREATOR_ID;
-        option3.textContent = creator.CREATOR_NAME;
-        artistCreatorSelect.appendChild(option3);
-      } else if (creator.CREATOR_TYPE === 'GROUP') {
-        const option4 = document.createElement('option');
-        option4.value = creator.CREATOR_ID;
-        option4.textContent = creator.CREATOR_NAME;
-        groupCreatorSelect.appendChild(option4);
+      const optionEdit = document.createElement('option');
+      optionEdit.value = creator.creator_id;
+      optionEdit.textContent = creator.creator_name;
+      if (editAlbumSelect) {
+        editAlbumSelect.appendChild(optionEdit);
       }
     });
 
-    console.log(`Loaded ${creators.length} creators`);
+    console.log(`${creators.length}件のクリエイターを読み込みました`);
 
   } catch (err) {
-    console.error('Failed to load creators:', err);
-    alert('Error loading artists: ' + err.message);
+    console.error('クリエイター読み込み失敗:', err);
+    alert('アーティスト読み込みエラー: ' + err.message);
   }
 }
 
@@ -94,27 +288,35 @@ async function loadSongs() {
 
     const tbody = document.getElementById('songList');
     tbody.innerHTML = "";
+    detailData.songs.clear();
 
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4">No songs found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4">楽曲が見つかりません</td></tr>';
       return;
     }
 
     data.forEach(song => {
+      if (!detailData.songs.has(Number(song.music_id))) {
+        detailData.songs.set(Number(song.music_id), song);
+      }
       const tr = document.createElement('tr');
+      const songTitleArg = escapeForSingleQuote(song.music_title);
+      const songKeyArg = escapeForSingleQuote(song.musical_key || '');
       tr.innerHTML = `
-        <td>${song.MUSIC_TITLE}</td>
-        <td>${song.CREATOR_NAME}</td>
-        <td>${song.BPM} BPM</td>
+        <td>${escapeHtml(song.music_title)}</td>
+        <td>${escapeHtml(song.creator_name)}</td>
+        <td>${escapeHtml(song.album_name || '')}</td>
         <td>
-          <button class="btn-edit" onclick="openEditModal(${song.MUSIC_ID}, '${song.MUSIC_TITLE.replace(/'/g, "\\'")}', ${song.BPM}, '${song.MUSICAL_KEY ? song.MUSICAL_KEY.replace(/'/g, "\\'") : ''}', ${song.DURATION_SECONDS || 0})">Edit</button>
-          <button class="btn-delete" onclick="deleteSong(${song.MUSIC_ID}, '${song.MUSIC_TITLE.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-add" onclick="openAddTagsModal(${song.music_id}, '${songTitleArg}')">Add Tag</button>
+          <button class="btn-more" onclick="openSongDetail(${song.music_id})">More</button>
+          <button class="btn-edit" onclick="openEditModal(${song.music_id}, '${songTitleArg}', ${song.bpm}, '${songKeyArg}', ${song.duration_seconds || 0})">Edit</button>
+          <button class="btn-delete" onclick="deleteSong(${song.music_id}, '${songTitleArg}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
   } catch (err) {
-    console.error('Failed to load songs:', err);
+    console.error('楽曲読み込み失敗:', err);
   }
 }
 
@@ -125,29 +327,34 @@ async function loadAlbums() {
 
     const tbody = document.getElementById('albumList');
     tbody.innerHTML = "";
+    detailData.albums.clear();
 
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4">No albums found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="4">アルバムが見つかりません</td></tr>';
       return;
     }
 
     data.forEach(album => {
+      detailData.albums.set(Number(album.album_id), album);
       const tr = document.createElement('tr');
-      const releaseDate = album.RELEASE_DATE ? new Date(album.RELEASE_DATE).toLocaleDateString() : 'N/A';
+      const releaseDate = album.release_date ? new Date(album.release_date).toLocaleDateString() : 'N/A';
+      const albumNameArg = escapeForSingleQuote(album.album_name);
+      const releaseDateArg = escapeForSingleQuote(album.release_date || '');
       tr.innerHTML = `
-        <td>${album.ALBUM_NAME}</td>
-        <td>${album.CREATOR_NAME || 'N/A'}</td>
-        <td>${releaseDate}</td>
+        <td>${escapeHtml(album.album_name)}</td>
+        <td>${escapeHtml(album.creator_name || 'N/A')}</td>
+        <td>${escapeHtml(releaseDate)}</td>
         <td>
-          <button class="btn-secondary" onclick="openAddSongsModal(${album.ALBUM_ID}, '${album.ALBUM_NAME.replace(/'/g, "\\'")}')" style="background: #FF9800;">Add Songs</button>
-          <button class="btn-edit" onclick="openEditAlbumModal(${album.ALBUM_ID}, '${album.ALBUM_NAME.replace(/'/g, "\\'")}', ${album.CREATOR_ID || 0}, '${album.RELEASE_DATE || ''}')">Edit</button>
-          <button class="btn-delete" onclick="deleteAlbum(${album.ALBUM_ID}, '${album.ALBUM_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-add" onclick="openAddSongsModal(${album.album_id}, '${albumNameArg}')">Add Songs</button>
+          <button class="btn-more" onclick="openAlbumDetail(${album.album_id})">More</button>
+          <button class="btn-edit" onclick="openEditAlbumModal(${album.album_id}, '${albumNameArg}', ${album.creator_id || 0}, '${releaseDateArg}')">Edit</button>
+          <button class="btn-delete" onclick="deleteAlbum(${album.album_id}, '${albumNameArg}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
   } catch (err) {
-    console.error('Failed to load albums:', err);
+    console.error('アルバム読み込み失敗:', err);
   }
 }
 
@@ -162,51 +369,43 @@ async function addSong(event) {
 
   // 厳格なバリデーション
   if (!title) {
-    alert('Please enter a song title');
+    alert('楽曲名を入力してください');
     return;
   }
 
   if (!creator_id || creator_id === '') {
-    alert('Please select an artist');
+    alert('アーティストを選択してください');
     return;
   }
 
   if (!bpm || bpm < 1) {
-    alert('Please enter a valid BPM');
+    alert('BPMを正しく入力してください');
     return;
   }
 
   try {
-    console.log('Adding song:', { title, creator_id: parseInt(creator_id), bpm: parseInt(bpm), musical_key, duration_seconds });
-    
-    const response = await fetch('/music', {
+    console.log('楽曲追加:', { title, creator_id: parseInt(creator_id), bpm: parseInt(bpm), musical_key, duration_seconds });
+
+    await runMutation({
+      url: '/music',
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+      body: {
         title,
         creator_id: parseInt(creator_id),
         bpm: parseInt(bpm),
         musical_key,
         duration_seconds: duration_seconds ? parseInt(duration_seconds) : null
-      })
+      },
+      successMessage: '楽曲を登録しました！',
+      failureLabel: '楽曲の登録に失敗しました',
+      onSuccess: async () => {
+        document.getElementById('addSongForm').reset();
+        await loadSongs();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-    console.log('Response body:', responseText);
-
-    if (response.ok) {
-      alert('Song added successfully!');
-      document.getElementById('addSongForm').reset();
-      loadSongs();
-    } else {
-      alert(`Failed to add song: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error adding song:', err);
-    alert('Error adding song: ' + err.message);
+    console.error('楽曲登録エラー:', err);
+    alert('楽曲登録エラー: ' + err.message);
   }
 }
 
@@ -234,66 +433,51 @@ async function updateSong(event) {
   const duration_seconds = document.getElementById('editDuration').value || null;
 
   if (!title || !bpm) {
-    alert('Please fill in required fields');
+    alert('必須項目を入力してください');
     return;
   }
 
   try {
-    console.log('Updating song:', { musicId, title, bpm, musical_key, duration_seconds });
-
-    const response = await fetch(`/music/${musicId}`, {
+    console.log('楽曲更新:', { musicId, title, bpm, musical_key, duration_seconds });
+    await runMutation({
+      url: `/music/${musicId}`,
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+      body: {
         title,
         bpm: parseInt(bpm),
         musical_key,
         duration_seconds: duration_seconds ? parseInt(duration_seconds) : null
-      })
+      },
+      successMessage: '楽曲を更新しました！',
+      failureLabel: '楽曲の更新に失敗しました',
+      onSuccess: async () => {
+        closeEditModal();
+        await loadSongs();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Song updated successfully!');
-      closeEditModal();
-      loadSongs();
-    } else {
-      alert(`Failed to update song: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error updating song:', err);
-    alert('Error updating song: ' + err.message);
+    console.error('楽曲更新エラー:', err);
+    alert('楽曲更新エラー: ' + err.message);
   }
 }
 
 async function deleteSong(musicId, title) {
-  if (!confirm(`Are you sure you want to delete "${title}"?`)) {
+  if (!confirm(`"${title}" を削除してもよろしいですか？`)) {
     return;
   }
 
   try {
-    console.log('Deleting song:', musicId);
-
-    const response = await fetch(`/music/${musicId}`, {
-      method: 'DELETE'
+    console.log('楽曲削除:', musicId);
+    await runMutation({
+      url: `/music/${musicId}`,
+      method: 'DELETE',
+      successMessage: '楽曲を削除しました！',
+      failureLabel: '楽曲の削除に失敗しました',
+      onSuccess: loadSongs
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Song deleted successfully!');
-      loadSongs();
-    } else {
-      alert(`Failed to delete song: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error deleting song:', err);
-    alert('Error deleting song: ' + err.message);
+    console.error('楽曲削除エラー:', err);
+    alert('楽曲削除エラー: ' + err.message);
   }
 }
 
@@ -307,43 +491,35 @@ async function addAlbum(event) {
   const releaseDate = document.getElementById('releaseDate').value || null;
 
   if (!albumName) {
-    alert('Please enter an album name');
+    alert('アルバム名を入力してください');
     return;
   }
 
   if (!creator_id || creator_id === '') {
-    alert('Please select an artist');
+    alert('アーティストを選択してください');
     return;
   }
 
   try {
-    console.log('Adding album:', { albumName, creator_id: parseInt(creator_id), releaseDate });
-
-    const response = await fetch('/albums', {
+    console.log('アルバム追加:', { albumName, creator_id: parseInt(creator_id), releaseDate });
+    await runMutation({
+      url: '/albums',
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+      body: {
         album_name: albumName,
         creator_id: parseInt(creator_id),
         release_date: releaseDate
-      })
+      },
+      successMessage: 'アルバムを登録しました！',
+      failureLabel: 'アルバムの登録に失敗しました',
+      onSuccess: async () => {
+        document.getElementById('addAlbumForm').reset();
+        await loadAlbums();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Album added successfully!');
-      document.getElementById('addAlbumForm').reset();
-      loadAlbums();
-    } else {
-      alert(`Failed to add album: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error adding album:', err);
-    alert('Error adding album: ' + err.message);
+    console.error('アルバム登録エラー:', err);
+    alert('アルバム登録エラー: ' + err.message);
   }
 }
 
@@ -351,7 +527,10 @@ function openEditAlbumModal(albumId, albumName, creatorId, releaseDate) {
   document.getElementById('editAlbumId').value = albumId;
   document.getElementById('editAlbumName').value = albumName;
   document.getElementById('editAlbumCreatorSelect').value = creatorId;
-  document.getElementById('editReleaseDate').value = releaseDate || '';
+  const formattedDate = releaseDate
+    ? releaseDate.split('T')[0] // "YYYY-MM-DDTHH:MM:SSZ" -> "YYYY-MM-DD"
+    : '';
+  document.getElementById('editReleaseDate').value = formattedDate;
   
   document.getElementById('editAlbumModal').style.display = 'block';
 }
@@ -369,194 +548,50 @@ async function updateAlbum(event) {
   const releaseDate = document.getElementById('editReleaseDate').value || null;
 
   if (!albumName || !creator_id) {
-    alert('Please fill in required fields');
+    alert('必須項目を入力してください');
     return;
   }
 
   try {
-    console.log('Updating album:', { albumId, albumName, creator_id, releaseDate });
-
-    const response = await fetch(`/albums/${albumId}`, {
+    console.log('アルバム更新:', { albumId, albumName, creator_id, releaseDate });
+    await runMutation({
+      url: `/albums/${albumId}`,
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+      body: {
         album_name: albumName,
         creator_id: parseInt(creator_id),
         release_date: releaseDate
-      })
+      },
+      successMessage: 'アルバムを更新しました！',
+      failureLabel: 'アルバムの更新に失敗しました',
+      onSuccess: async () => {
+        closeEditAlbumModal();
+        await loadAlbums();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Album updated successfully!');
-      closeEditAlbumModal();
-      loadAlbums();
-    } else {
-      alert(`Failed to update album: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error updating album:', err);
-    alert('Error updating album: ' + err.message);
+    console.error('アルバム更新エラー:', err);
+    alert('アルバム更新エラー: ' + err.message);
   }
 }
 
 async function deleteAlbum(albumId, albumName) {
-  if (!confirm(`Are you sure you want to delete the album "${albumName}"?`)) {
+  if (!confirm(`アルバム "${albumName}" を削除してもよろしいですか？`)) {
     return;
   }
 
   try {
-    console.log('Deleting album:', albumId);
-
-    const response = await fetch(`/albums/${albumId}`, {
-      method: 'DELETE'
+    console.log('アルバム削除:', albumId);
+    await runMutation({
+      url: `/albums/${albumId}`,
+      method: 'DELETE',
+      successMessage: 'アルバムを削除しました！',
+      failureLabel: 'アルバムの削除に失敗しました',
+      onSuccess: loadAlbums
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Album deleted successfully!');
-      loadAlbums();
-    } else {
-      alert(`Failed to delete album: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error deleting album:', err);
-    alert('Error deleting album: ' + err.message);
-  }
-}
-
-// ===== クリエイター関連関数 =====
-
-async function addCreator(event) {
-  event.preventDefault();
-
-  const creatorName = document.getElementById('creatorName').value.trim();
-  const creatorType = document.getElementById('creatorType').value;
-
-  if (!creatorName) {
-    alert('Please enter a creator name');
-    return;
-  }
-
-  if (!creatorType) {
-    alert('Please select a creator type');
-    return;
-  }
-
-  try {
-    console.log('Adding creator:', { creatorName, creatorType });
-
-    const response = await fetch('/creators', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        creator_name: creatorName,
-        creator_type: creatorType
-      })
-    });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Creator added successfully!');
-      document.getElementById('addCreatorForm').reset();
-      loadCreators();
-    } else {
-      alert(`Failed to add creator: ${response.status} - ${responseText}`);
-    }
-  } catch (err) {
-    console.error('Error adding creator:', err);
-    alert('Error adding creator: ' + err.message);
-  }
-}
-
-function openEditCreatorModal(creatorId, creatorName, creatorType) {
-  document.getElementById('editCreatorId').value = creatorId;
-  document.getElementById('editCreatorName').value = creatorName;
-  document.getElementById('editCreatorType').value = creatorType;
-  
-  document.getElementById('editCreatorModal').style.display = 'block';
-}
-
-function closeEditCreatorModal() {
-  document.getElementById('editCreatorModal').style.display = 'none';
-}
-
-async function updateCreator(event) {
-  event.preventDefault();
-
-  const creatorId = document.getElementById('editCreatorId').value;
-  const creatorName = document.getElementById('editCreatorName').value.trim();
-  const creatorType = document.getElementById('editCreatorType').value;
-
-  if (!creatorName || !creatorType) {
-    alert('Please fill in all required fields');
-    return;
-  }
-
-  try {
-    console.log('Updating creator:', { creatorId, creatorName, creatorType });
-
-    const response = await fetch(`/creators/${creatorId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        creator_name: creatorName,
-        creator_type: creatorType
-      })
-    });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Creator updated successfully!');
-      closeEditCreatorModal();
-      loadCreators();
-    } else {
-      alert(`Failed to update creator: ${response.status} - ${responseText}`);
-    }
-  } catch (err) {
-    console.error('Error updating creator:', err);
-    alert('Error updating creator: ' + err.message);
-  }
-}
-
-async function deleteCreator(creatorId, creatorName) {
-  if (!confirm(`Are you sure you want to delete the creator "${creatorName}"? This will also delete associated songs and albums.`)) {
-    return;
-  }
-
-  try {
-    console.log('Deleting creator:', creatorId);
-
-    const response = await fetch(`/creators/${creatorId}`, {
-      method: 'DELETE'
-    });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Creator deleted successfully!');
-      loadCreators();
-    } else {
-      alert(`Failed to delete creator: ${response.status} - ${responseText}`);
-    }
-  } catch (err) {
-    console.error('Error deleting creator:', err);
-    alert('Error deleting creator: ' + err.message);
+    console.error('アルバム削除エラー:', err);
+    alert('アルバム削除エラー: ' + err.message);
   }
 }
 
@@ -575,7 +610,7 @@ async function openAddSongsModal(albumId, albumName) {
     songsList.innerHTML = "";
 
     if (songs.length === 0) {
-      songsList.innerHTML = '<p>No songs available to add</p>';
+      songsList.innerHTML = '<p>追加可能な楽曲がありません</p>';
       document.getElementById('addSongsModal').style.display = 'block';
       return;
     }
@@ -585,8 +620,8 @@ async function openAddSongsModal(albumId, albumName) {
       div.style.marginBottom = '10px';
       div.innerHTML = `
         <label>
-          <input type="checkbox" name="songCheckbox" value="${song.MUSIC_ID}">
-          ${song.MUSIC_TITLE} - ${song.CREATOR_NAME} (${song.BPM} BPM)
+          <input type="checkbox" name="songCheckbox" value="${song.music_id}">
+          ${escapeHtml(song.music_title)} - ${escapeHtml(song.creator_name)} (${escapeHtml(song.bpm)} BPM)
         </label>
       `;
       songsList.appendChild(div);
@@ -595,13 +630,147 @@ async function openAddSongsModal(albumId, albumName) {
     document.getElementById('addSongsModal').style.display = 'block';
 
   } catch (err) {
-    console.error('Failed to load available songs:', err);
-    alert('Error loading songs: ' + err.message);
+    console.error('追加可能楽曲の読み込み失敗:', err);
+    alert('楽曲読み込みエラー: ' + err.message);
   }
 }
 
 function closeAddSongsModal() {
   document.getElementById('addSongsModal').style.display = 'none';
+}
+
+async function openAddTagsModal(musicId, musicTitle) {
+  document.getElementById('addTagsMusicId').value = musicId;
+  document.getElementById('addTagsMusicName').textContent = musicTitle;
+
+  try {
+    const [linkedRes, availableRes] = await Promise.all([
+      fetch(`/music/${musicId}/tags`),
+      fetch(`/music/${musicId}/available-tags`)
+    ]);
+    const linkedTags = await linkedRes.json();
+    const tags = await availableRes.json();
+
+    const linkedTagsList = document.getElementById('linkedTagsList');
+    const tagsList = document.getElementById('availableTagsList');
+    linkedTagsList.innerHTML = '';
+    tagsList.innerHTML = '';
+
+    if (!Array.isArray(linkedTags) || linkedTags.length === 0) {
+      linkedTagsList.innerHTML = '<p>現在紐付いているタグはありません</p>';
+    } else {
+      linkedTags.forEach((tag) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.justifyContent = 'space-between';
+        row.style.marginBottom = '8px';
+
+        const text = document.createElement('span');
+        text.textContent = `${tag.tag_name}${tag.note ? ` (${tag.note})` : ''}`;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn-delete';
+        removeBtn.textContent = '解除';
+        removeBtn.style.marginLeft = '8px';
+        removeBtn.onclick = () => removeTagFromMusic(musicId, tag.tag_id, tag.tag_name, musicTitle);
+
+        row.appendChild(text);
+        row.appendChild(removeBtn);
+        linkedTagsList.appendChild(row);
+      });
+    }
+
+    if (!Array.isArray(tags) || tags.length === 0) {
+      tagsList.innerHTML = '<p>追加可能なタグがありません</p>';
+      document.getElementById('addTagsModal').style.display = 'block';
+      return;
+    }
+
+    tags.forEach((tag) => {
+      const wrapper = document.createElement('div');
+      wrapper.style.marginBottom = '10px';
+
+      const label = document.createElement('label');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'tagCheckbox';
+      checkbox.value = tag.tag_id;
+
+      const text = document.createTextNode(` ${tag.tag_name}${tag.note ? ` (${tag.note})` : ''}`);
+
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      wrapper.appendChild(label);
+      tagsList.appendChild(wrapper);
+    });
+
+    document.getElementById('addTagsModal').style.display = 'block';
+  } catch (err) {
+    console.error('タグ候補の読み込み失敗:', err);
+    alert('タグ候補の読み込みに失敗しました: ' + err.message);
+  }
+}
+
+function closeAddTagsModal() {
+  document.getElementById('addTagsModal').style.display = 'none';
+}
+
+async function removeTagFromMusic(musicId, tagId, tagName, musicTitle) {
+  if (!confirm(`タグ「${tagName}」の紐付けを解除しますか？`)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/music/${musicId}/tags/${tagId}`, {
+      method: 'DELETE'
+    });
+    const responseText = await response.text();
+
+    if (response.ok) {
+      alert('タグの紐付けを解除しました');
+      await openAddTagsModal(musicId, musicTitle);
+      await loadSongs();
+    } else {
+      alert(`タグ解除に失敗しました: ${response.status} - ${responseText}`);
+    }
+  } catch (err) {
+    console.error('タグ解除エラー:', err);
+    alert('タグ解除エラー: ' + err.message);
+  }
+}
+
+async function saveTagsToMusic(event) {
+  event.preventDefault();
+
+  const musicId = document.getElementById('addTagsMusicId').value;
+  const checkboxes = document.querySelectorAll('input[name="tagCheckbox"]:checked');
+
+  if (checkboxes.length === 0) {
+    alert('1つ以上のタグを選択してください');
+    return;
+  }
+
+  const tagIds = Array.from(checkboxes).map((cb) => Number(cb.value));
+
+  try {
+    console.log('曲へのタグ紐付け:', { musicId, tagIds });
+    await runMutation({
+      url: `/music/${musicId}/tags`,
+      method: 'POST',
+      body: { tag_ids: tagIds },
+      successMessage: 'タグを紐付けました！',
+      failureLabel: 'タグ紐付けに失敗しました',
+      onSuccess: async () => {
+        closeAddTagsModal();
+        await loadSongs();
+      }
+    });
+  } catch (err) {
+    console.error('タグ紐付けエラー:', err);
+    alert('タグ紐付けエラー: ' + err.message);
+  }
 }
 
 async function saveSongsToAlbum(event) {
@@ -611,38 +780,28 @@ async function saveSongsToAlbum(event) {
   const checkboxes = document.querySelectorAll('input[name="songCheckbox"]:checked');
 
   if (checkboxes.length === 0) {
-    alert('Please select at least one song');
+    alert('1曲以上選択してください');
     return;
   }
 
   const musicIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
 
   try {
-    console.log('Adding songs to album:', { albumId, musicIds });
-
-    const response = await fetch(`/albums/${albumId}/songs`, {
+    console.log('アルバムへの楽曲追加:', { albumId, musicIds });
+    await runMutation({
+      url: `/albums/${albumId}/songs`,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        music_ids: musicIds
-      })
+      body: { music_ids: musicIds },
+      successMessage: 'アルバムに楽曲を追加しました！',
+      failureLabel: '楽曲追加に失敗しました',
+      onSuccess: async () => {
+        closeAddSongsModal();
+        await loadAlbums();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Songs added to album successfully!');
-      closeAddSongsModal();
-      loadAlbums();
-    } else {
-      alert(`Failed to add songs: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error adding songs:', err);
-    alert('Error adding songs: ' + err.message);
+    console.error('楽曲追加エラー:', err);
+    alert('楽曲追加エラー: ' + err.message);
   }
 }
 
@@ -652,42 +811,47 @@ async function loadTags() {
     const res = await fetch('/tags');
     
     if (!res.ok) {
-      console.error('Failed to load tags. Status:', res.status);
+      console.error('タグ読み込み失敗。ステータス:', res.status);
       return;
     }
 
     const tags = await res.json();
     
     if (!Array.isArray(tags)) {
-      console.warn('No tags found');
+      console.warn('タグが見つかりません');
       return;
     }
 
     // テーブル表示
     const tbody = document.getElementById('tagList');
     if (!tbody) {
-      console.warn('tagList element not found');
+      console.warn('tagList要素が見つかりません');
       return;
     }
     tbody.innerHTML = "";
+    detailData.tags.clear();
 
     tags.forEach(tag => {
+      detailData.tags.set(Number(tag.tag_id), tag);
       const tr = document.createElement('tr');
+      const tagNameArg = escapeForSingleQuote(tag.tag_name);
+      const tagNoteArg = escapeForSingleQuote(tag.note || '');
       tr.innerHTML = `
-        <td>${tag.TAG_NAME}</td>
-        <td>${tag.NOTE || ''}</td>
+        <td>${escapeHtml(tag.tag_name)}</td>
+        <td>${escapeHtml(tag.note || '')}</td>
         <td>
-          <button class="btn-edit" onclick="openEditTagModal(${tag.TAG_ID}, '${tag.TAG_NAME.replace(/'/g, "\\'")}', '${(tag.NOTE || '').replace(/'/g, "\\'")}')" style="margin-right: 5px;">Edit</button>
-          <button class="btn-delete" onclick="deleteTag(${tag.TAG_ID}, '${tag.TAG_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-more" onclick="openTagDetail(${tag.tag_id})">More</button>
+          <button class="btn-edit" onclick="openEditTagModal(${tag.tag_id}, '${tagNameArg}', '${tagNoteArg}')" style="margin-right: 5px;">Edit</button>
+          <button class="btn-delete" onclick="deleteTag(${tag.tag_id}, '${tagNameArg}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
 
-    console.log(`Loaded ${tags.length} tags`);
+    console.log(`${tags.length}件のタグを読み込みました`);
 
   } catch (err) {
-    console.error('Failed to load tags:', err);
+    console.error('タグ読み込み失敗:', err);
   }
 }
 
@@ -698,12 +862,12 @@ async function addTag(event) {
   const tagNote = document.getElementById('tagNote').value.trim();
 
   if (!tagName) {
-    alert('Please enter tag name');
+    alert('タグ名を入力してください');
     return;
   }
 
   try {
-    console.log('Adding tag:', { tagName, tagNote });
+    console.log('タグ追加:', { tagName, tagNote });
 
     const response = await fetch('/tags', {
       method: 'POST',
@@ -716,19 +880,28 @@ async function addTag(event) {
       })
     });
 
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch (parseErr) {
+      payload = null;
+    }
+
+    console.log('レスポンスステータス:', response.status);
 
     if (response.ok) {
-      alert('Tag added successfully!');
+      const message = payload?.message || 'タグを作成しました！';
+      alert(message);
       document.getElementById('addTagForm').reset();
       loadTags();
+    } else if (response.status === 409) {
+      alert(payload?.error || '同名のタグが既に存在します');
     } else {
-      alert(`Failed to add tag: ${response.status} - ${responseText}`);
+      alert(`タグ作成に失敗しました: ${response.status} - ${payload?.error || '不明なエラー'}`);
     }
   } catch (err) {
-    console.error('Error adding tag:', err);
-    alert('Error adding tag: ' + err.message);
+    console.error('タグ作成エラー:', err);
+    alert('タグ作成エラー: ' + err.message);
   }
 }
 
@@ -752,64 +925,49 @@ async function updateTag(event) {
   const tagNote = document.getElementById('editTagNote').value.trim();
 
   if (!tagName) {
-    alert('Please fill in required fields');
+    alert('必須項目を入力してください');
     return;
   }
 
   try {
-    console.log('Updating tag:', { tagId, tagName, tagNote });
-
-    const response = await fetch(`/tags/${tagId}`, {
+    console.log('タグ更新:', { tagId, tagName, tagNote });
+    await runMutation({
+      url: `/tags/${tagId}`,
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+      body: {
         tag_name: tagName,
         note: tagNote || null
-      })
+      },
+      successMessage: 'タグを更新しました！',
+      failureLabel: 'タグ更新に失敗しました',
+      onSuccess: async () => {
+        closeEditTagModal();
+        await loadTags();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Tag updated successfully!');
-      closeEditTagModal();
-      loadTags();
-    } else {
-      alert(`Failed to update tag: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error updating tag:', err);
-    alert('Error updating tag: ' + err.message);
+    console.error('タグ更新エラー:', err);
+    alert('タグ更新エラー: ' + err.message);
   }
 }
 
 async function deleteTag(tagId, tagName) {
-  if (!confirm(`Are you sure you want to delete the tag "${tagName}"?`)) {
+  if (!confirm(`タグ "${tagName}" を削除してもよろしいですか？`)) {
     return;
   }
 
   try {
-    console.log('Deleting tag:', tagId);
-
-    const response = await fetch(`/tags/${tagId}`, {
-      method: 'DELETE'
+    console.log('タグ削除:', tagId);
+    await runMutation({
+      url: `/tags/${tagId}`,
+      method: 'DELETE',
+      successMessage: 'タグを削除しました！',
+      failureLabel: 'タグ削除に失敗しました',
+      onSuccess: loadTags
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Tag deleted successfully!');
-      loadTags();
-    } else {
-      alert(`Failed to delete tag: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error deleting tag:', err);
-    alert('Error deleting tag: ' + err.message);
+    console.error('タグ削除エラー:', err);
+    alert('タグ削除エラー: ' + err.message);
   }
 }
 
@@ -819,95 +977,102 @@ async function loadArtists() {
     const res = await fetch('/artists');
     
     if (!res.ok) {
-      console.error('Failed to load artists. Status:', res.status);
+      console.error('アーティスト読み込み失敗。ステータス:', res.status);
       return;
     }
 
     const artists = await res.json();
     
     if (!Array.isArray(artists)) {
-      console.warn('No artists found');
+      console.warn('アーティストが見つかりません');
       return;
     }
 
     // テーブル表示
     const tbody = document.getElementById('artistList');
     if (!tbody) {
-      console.warn('artistList element not found');
+      console.warn('artistList要素が見つかりません');
       return;
     }
     tbody.innerHTML = "";
+    detailData.artists.clear();
 
     artists.forEach(artist => {
+      detailData.artists.set(Number(artist.artist_id), artist);
       const tr = document.createElement('tr');
+      const artistNameArg = escapeForSingleQuote(artist.artist_name || '');
+      const dob = (artist.date_of_birth || '').substring(0, 10);
+      const started = (artist.started_at || '').substring(0, 10);
+      const ended = (artist.ended_at || '').substring(0, 10);
       tr.innerHTML = `
-        <td>${artist.ARTIST_NAME}</td>
-        <td>${artist.DATE_OF_BIRTH ? artist.DATE_OF_BIRTH.substring(0, 10) : ''}</td>
-        <td>${artist.STARTED_AT ? artist.STARTED_AT.substring(0, 10) : ''}</td>
-        <td>${artist.ENDED_AT ? artist.ENDED_AT.substring(0, 10) : ''}</td>
+        <td>${escapeHtml(artist.artist_name)}</td>
+        <td>${escapeHtml(dob)}</td>
+        <td>${escapeHtml(started)}</td>
+        <td>${escapeHtml(ended)}</td>
         <td>
-          <button class="btn-edit" onclick="openEditArtistModal(${artist.ARTIST_ID}, ${artist.CREATOR_ID}, '${artist.ARTIST_NAME.replace(/'/g, "\\'")}', '${(artist.DATE_OF_BIRTH || '').substring(0, 10)}', '${(artist.STARTED_AT || '').substring(0, 10)}', '${(artist.ENDED_AT || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
-          <button class="btn-delete" onclick="deleteArtist(${artist.ARTIST_ID}, '${artist.ARTIST_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-more" onclick="openArtistDetail(${artist.artist_id})">More</button>
+          <button class="btn-edit" onclick="openEditArtistModal(${artist.artist_id}, '${artistNameArg}', '${escapeForSingleQuote(dob)}', '${escapeForSingleQuote(started)}', '${escapeForSingleQuote(ended)}')" style="margin-right: 5px;">Edit</button>
+          <button class="btn-delete" onclick="deleteArtist(${artist.artist_id}, '${artistNameArg}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
 
-    console.log(`Loaded ${artists.length} artists`);
+    console.log(`${artists.length}件のアーティストを読み込みました`);
 
   } catch (err) {
-    console.error('Failed to load artists:', err);
+    console.error('アーティスト読み込み失敗:', err);
   }
 }
 
 async function addArtist(event) {
   event.preventDefault();
 
-  const creatorId = document.getElementById('artistCreatorSelect').value;
+  const artistName = document.getElementById('artistName').value.trim();
   const dateOfBirth = document.getElementById('artistDoB').value || null;
   const startedAt = document.getElementById('artistStartDate').value || null;
   const endedAt = document.getElementById('artistEndDate').value || null;
 
-  if (!creatorId) {
-    alert('Please select a creator');
+  if (!artistName) {
+    alert('アーティスト名を入力してください');
     return;
   }
 
   try {
-    console.log('Adding artist:', { creatorId, dateOfBirth, startedAt, endedAt });
+    console.log('アーティスト追加:', { artistName, dateOfBirth, startedAt, endedAt });
 
-    const response = await fetch('/artists', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        creator_id: parseInt(creatorId),
+    const { response: creatorRes, payload } = await createCreatorWithType(artistName, 'SOLO');
+    if (!creatorRes.ok || !payload?.creator_id) {
+      alert(`アーティスト登録に失敗しました: ${creatorRes.status} - ${payload?.error || '不明なエラー'}`);
+      return;
+    }
+
+    const creatorId = Number(payload.creator_id);
+    await runMutation({
+      url: `/artists/${creatorId}`,
+      method: 'PUT',
+      body: {
+        creator_id: creatorId,
         date_of_birth: dateOfBirth,
         started_at: startedAt,
         ended_at: endedAt
-      })
+      },
+      successMessage: 'アーティストを登録しました！',
+      failureLabel: 'アーティストの登録に失敗しました',
+      onSuccess: async () => {
+        document.getElementById('addArtistForm').reset();
+        await loadCreators();
+        await loadArtists();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Artist added successfully!');
-      document.getElementById('addArtistForm').reset();
-      loadArtists();
-    } else {
-      alert(`Failed to add artist: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error adding artist:', err);
-    alert('Error adding artist: ' + err.message);
+    console.error('アーティスト登録エラー:', err);
+    alert('アーティスト登録エラー: ' + err.message);
   }
 }
 
-function openEditArtistModal(artistId, creatorId, artistName, dateOfBirth, startedAt, endedAt) {
+function openEditArtistModal(artistId, artistName, dateOfBirth, startedAt, endedAt) {
   document.getElementById('editArtistId').value = artistId;
-  document.getElementById('editArtistCreatorSelect').value = creatorId;
   document.getElementById('editArtistName').value = artistName;
   document.getElementById('editArtistDoB').value = dateOfBirth;
   document.getElementById('editArtistStartDate').value = startedAt;
@@ -923,73 +1088,74 @@ function closeEditArtistModal() {
 async function updateArtist(event) {
   event.preventDefault();
 
-  const artistId = document.getElementById('editArtistId').value;
-  const creatorId = document.getElementById('editArtistCreatorSelect').value;
+  const artistId = Number(document.getElementById('editArtistId').value);
+  const artistName = document.getElementById('editArtistName').value.trim();
   const dateOfBirth = document.getElementById('editArtistDoB').value || null;
   const startedAt = document.getElementById('editArtistStartDate').value || null;
   const endedAt = document.getElementById('editArtistEndDate').value || null;
 
-  if (!creatorId) {
-    alert('Please select a creator');
+  if (!artistName) {
+    alert('アーティスト名を入力してください');
     return;
   }
 
   try {
-    console.log('Updating artist:', { artistId, creatorId, dateOfBirth, startedAt, endedAt });
+    console.log('アーティスト更新:', { artistId, artistName, dateOfBirth, startedAt, endedAt });
 
-    const response = await fetch(`/artists/${artistId}`, {
+    const renameRes = await fetch(`/creators/${artistId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        creator_id: parseInt(creatorId),
+        creator_name: artistName,
+        creator_type: 'SOLO'
+      })
+    });
+    const renameText = await renameRes.text();
+    if (!renameRes.ok) {
+      alert(`アーティスト名更新に失敗しました: ${renameRes.status} - ${renameText}`);
+      return;
+    }
+
+    await runMutation({
+      url: `/artists/${artistId}`,
+      method: 'PUT',
+      body: {
+        creator_id: artistId,
         date_of_birth: dateOfBirth,
         started_at: startedAt,
         ended_at: endedAt
-      })
+      },
+      successMessage: 'アーティストを更新しました！',
+      failureLabel: 'アーティストの更新に失敗しました',
+      onSuccess: async () => {
+        closeEditArtistModal();
+        await loadCreators();
+        await loadArtists();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Artist updated successfully!');
-      closeEditArtistModal();
-      loadArtists();
-    } else {
-      alert(`Failed to update artist: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error updating artist:', err);
-    alert('Error updating artist: ' + err.message);
+    console.error('アーティスト更新エラー:', err);
+    alert('アーティスト更新エラー: ' + err.message);
   }
 }
 
 async function deleteArtist(artistId, artistName) {
-  if (!confirm(`Are you sure you want to delete the artist "${artistName}"?`)) {
+  if (!confirm(`アーティスト "${artistName}" を削除してもよろしいですか？`)) {
     return;
   }
 
   try {
-    console.log('Deleting artist:', artistId);
-
-    const response = await fetch(`/artists/${artistId}`, {
-      method: 'DELETE'
+    console.log('アーティスト削除:', artistId);
+    await runMutation({
+      url: `/artists/${artistId}`,
+      method: 'DELETE',
+      successMessage: 'アーティストを削除しました！',
+      failureLabel: 'アーティストの削除に失敗しました',
+      onSuccess: loadArtists
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Artist deleted successfully!');
-      loadArtists();
-    } else {
-      alert(`Failed to delete artist: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error deleting artist:', err);
-    alert('Error deleting artist: ' + err.message);
+    console.error('アーティスト削除エラー:', err);
+    alert('アーティスト削除エラー: ' + err.message);
   }
 }
 
@@ -999,96 +1165,199 @@ async function loadGroups() {
     const res = await fetch('/groups');
     
     if (!res.ok) {
-      console.error('Failed to load groups. Status:', res.status);
+      console.error('グループ読み込み失敗。ステータス:', res.status);
       return;
     }
 
     const groups = await res.json();
     
     if (!Array.isArray(groups)) {
-      console.warn('No groups found');
+      console.warn('グループが見つかりません');
       return;
     }
 
     // テーブル表示
     const tbody = document.getElementById('groupList');
     if (!tbody) {
-      console.warn('groupList element not found');
+      console.warn('groupList要素が見つかりません');
       return;
     }
     tbody.innerHTML = "";
+    detailData.groups.clear();
 
     groups.forEach(group => {
+      detailData.groups.set(Number(group.group_id), group);
       const tr = document.createElement('tr');
+      const groupNameArg = escapeForSingleQuote(group.group_name || '');
+      const formationDate = (group.formation_date || '').substring(0, 10);
+      const dissolutionDate = (group.dissolution_date || '').substring(0, 10);
       tr.innerHTML = `
-        <td>${group.GROUP_NAME}</td>
-        <td>${group.FORMATION_DATE ? group.FORMATION_DATE.substring(0, 10) : ''}</td>
-        <td>${group.DISSOLUTION_DATE ? group.DISSOLUTION_DATE.substring(0, 10) : ''}</td>
+        <td>${escapeHtml(group.group_name)}</td>
+        <td>${escapeHtml(formationDate)}</td>
+        <td>${escapeHtml(dissolutionDate)}</td>
         <td>
-          <button class="btn-edit" onclick="openEditGroupModal(${group.GROUP_ID}, ${group.CREATOR_ID}, '${group.GROUP_NAME.replace(/'/g, "\\'")}', '${(group.FORMATION_DATE || '').substring(0, 10)}', '${(group.DISSOLUTION_DATE || '').substring(0, 10)}')" style="margin-right: 5px;">Edit</button>
-          <button class="btn-delete" onclick="deleteGroup(${group.GROUP_ID}, '${group.GROUP_NAME.replace(/'/g, "\\'")}')" style="margin-left: 5px;">Delete</button>
+          <button class="btn-add" onclick="openAddMembersModal(${group.group_id}, '${groupNameArg}')">Add Artists</button>
+          <button class="btn-more" onclick="openGroupDetail(${group.group_id})">More</button>
+          <button class="btn-edit" onclick="openEditGroupModal(${group.group_id}, '${groupNameArg}', '${escapeForSingleQuote(formationDate)}', '${escapeForSingleQuote(dissolutionDate)}')" style="margin-right: 5px;">Edit</button>
+          <button class="btn-delete" onclick="deleteGroup(${group.group_id}, '${groupNameArg}')" style="margin-left: 5px;">Delete</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
 
-    console.log(`Loaded ${groups.length} groups`);
+    console.log(`${groups.length}件のグループを読み込みました`);
 
   } catch (err) {
-    console.error('Failed to load groups:', err);
+    console.error('グループ読み込み失敗:', err);
   }
 }
 
 async function addGroup(event) {
   event.preventDefault();
 
-  const creatorId = document.getElementById('groupCreatorSelect').value;
+  const groupName = document.getElementById('groupName').value.trim();
   const formationDate = document.getElementById('groupFormationDate').value || null;
   const dissolutionDate = document.getElementById('groupDissolutionDate').value || null;
 
-  if (!creatorId) {
-    alert('Please select a creator');
+  if (!groupName) {
+    alert('グループ名を入力してください');
     return;
   }
 
   try {
-    console.log('Adding group:', { creatorId, formationDate, dissolutionDate });
+    console.log('グループ追加:', { groupName, formationDate, dissolutionDate });
 
-    const response = await fetch('/groups', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        creator_id: parseInt(creatorId),
+    const { response: creatorRes, payload } = await createCreatorWithType(groupName, 'GROUP');
+    if (!creatorRes.ok || !payload?.creator_id) {
+      alert(`グループ登録に失敗しました: ${creatorRes.status} - ${payload?.error || '不明なエラー'}`);
+      return;
+    }
+
+    const creatorId = Number(payload.creator_id);
+    await runMutation({
+      url: `/groups/${creatorId}`,
+      method: 'PUT',
+      body: {
         formation_date: formationDate,
         dissolution_date: dissolutionDate
-      })
+      },
+      successMessage: 'グループを登録しました！',
+      failureLabel: 'グループの登録に失敗しました',
+      onSuccess: async () => {
+        document.getElementById('addGroupForm').reset();
+        await loadCreators();
+        await loadGroups();
+      }
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Group added successfully!');
-      document.getElementById('addGroupForm').reset();
-      loadGroups();
-    } else {
-      alert(`Failed to add group: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error adding group:', err);
-    alert('Error adding group: ' + err.message);
+    console.error('グループ登録エラー:', err);
+    alert('グループ登録エラー: ' + err.message);
   }
 }
 
-function openEditGroupModal(groupId, creatorId, groupName, formationDate, dissolutionDate) {
+async function openAddMembersModal(groupId, groupName) {
+  document.getElementById('addMembersGroupId').value = groupId;
+  document.getElementById('addMembersGroupName').textContent = groupName;
+
+  try {
+    const [membersRes, availableRes] = await Promise.all([
+      fetch(`/groups/${groupId}/members`),
+      fetch(`/groups/${groupId}/available-artists`)
+    ]);
+
+    const members = await membersRes.json();
+    const availableArtists = await availableRes.json();
+
+    const membersList = document.getElementById('groupMembersList');
+    const availableList = document.getElementById('availableArtistsList');
+    membersList.innerHTML = '';
+    availableList.innerHTML = '';
+
+    if (!Array.isArray(members) || members.length === 0) {
+      membersList.innerHTML = '<p>現在メンバーはいません</p>';
+    } else {
+      members.forEach((member) => {
+        const row = document.createElement('div');
+        row.style.marginBottom = '8px';
+        row.textContent = `${member.artist_name}`;
+        membersList.appendChild(row);
+      });
+    }
+
+    if (!Array.isArray(availableArtists) || availableArtists.length === 0) {
+      availableList.innerHTML = '<p>追加可能なアーティストがいません</p>';
+      document.getElementById('addMembersModal').style.display = 'block';
+      return;
+    }
+
+    availableArtists.forEach((artist) => {
+      const wrapper = document.createElement('div');
+      wrapper.style.marginBottom = '10px';
+
+      const label = document.createElement('label');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'artistCheckbox';
+      checkbox.value = artist.artist_id;
+
+      const text = document.createTextNode(` ${artist.artist_name}`);
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      wrapper.appendChild(label);
+      availableList.appendChild(wrapper);
+    });
+
+    document.getElementById('addMembersModal').style.display = 'block';
+  } catch (err) {
+    console.error('グループメンバー候補の読み込み失敗:', err);
+    alert('グループメンバー候補の読み込みに失敗しました: ' + err.message);
+  }
+}
+
+function closeAddMembersModal() {
+  document.getElementById('addMembersModal').style.display = 'none';
+}
+
+async function saveMembersToGroup(event) {
+  event.preventDefault();
+
+  const groupId = document.getElementById('addMembersGroupId').value;
+  const groupName = document.getElementById('addMembersGroupName').textContent;
+  const checkboxes = document.querySelectorAll('input[name="artistCheckbox"]:checked');
+
+  if (checkboxes.length === 0) {
+    alert('1人以上のアーティストを選択してください');
+    return;
+  }
+
+  const artistIds = Array.from(checkboxes).map((cb) => Number(cb.value));
+
+  try {
+    console.log('グループへアーティスト追加:', { groupId, artistIds });
+    await runMutation({
+      url: `/groups/${groupId}/members`,
+      method: 'POST',
+      body: { artist_ids: artistIds },
+      successMessage: 'グループにアーティストを追加しました！',
+      failureLabel: 'アーティスト追加に失敗しました',
+      onSuccess: async () => openAddMembersModal(groupId, groupName)
+    });
+  } catch (err) {
+    console.error('グループメンバー追加エラー:', err);
+    alert('グループメンバー追加エラー: ' + err.message);
+  }
+}
+
+function openEditGroupModal(groupId, groupName, formationDate, dissolutionDate) {
   document.getElementById('editGroupId').value = groupId;
-  document.getElementById('editGroupCreatorSelect').value = creatorId;
   document.getElementById('editGroupName').value = groupName;
-  document.getElementById('editGroupFormationDate').value = formationDate;
-  document.getElementById('editGroupDissolutionDate').value = dissolutionDate;
-  
+
+  document.getElementById('editGroupFormationDate').value =
+    formationDate ? formationDate.split('T')[0] : '';
+
+  document.getElementById('editGroupDissolutionDate').value =
+    dissolutionDate ? dissolutionDate.split('T')[0] : '';
+
   document.getElementById('editGroupModal').style.display = 'block';
 }
 
@@ -1099,71 +1368,71 @@ function closeEditGroupModal() {
 async function updateGroup(event) {
   event.preventDefault();
 
-  const groupId = document.getElementById('editGroupId').value;
-  const creatorId = document.getElementById('editGroupCreatorSelect').value;
+  const groupId = Number(document.getElementById('editGroupId').value);
+  const groupName = document.getElementById('editGroupName').value.trim();
   const formationDate = document.getElementById('editGroupFormationDate').value || null;
   const dissolutionDate = document.getElementById('editGroupDissolutionDate').value || null;
 
-  if (!creatorId) {
-    alert('Please select a creator');
+  if (!groupName) {
+    alert('グループ名を入力してください');
     return;
   }
 
   try {
-    console.log('Updating group:', { groupId, creatorId, formationDate, dissolutionDate });
+    console.log('グループ更新:', { groupId, groupName, formationDate, dissolutionDate });
 
-    const response = await fetch(`/groups/${groupId}`, {
+    const renameRes = await fetch(`/creators/${groupId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        creator_id: parseInt(creatorId),
-        formation_date: formationDate,
-        dissolution_date: dissolutionDate
+        creator_name: groupName,
+        creator_type: 'GROUP'
       })
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Group updated successfully!');
-      closeEditGroupModal();
-      loadGroups();
-    } else {
-      alert(`Failed to update group: ${response.status} - ${responseText}`);
+    const renameText = await renameRes.text();
+    if (!renameRes.ok) {
+      alert(`グループ名更新に失敗しました: ${renameRes.status} - ${renameText}`);
+      return;
     }
+
+    await runMutation({
+      url: `/groups/${groupId}`,
+      method: 'PUT',
+      body: {
+        formation_date: formationDate,
+        dissolution_date: dissolutionDate
+      },
+      successMessage: 'グループを更新しました！',
+      failureLabel: 'グループの更新に失敗しました',
+      onSuccess: async () => {
+        closeEditGroupModal();
+        await loadCreators();
+        await loadGroups();
+      }
+    });
   } catch (err) {
-    console.error('Error updating group:', err);
-    alert('Error updating group: ' + err.message);
+    console.error('グループ更新エラー:', err);
+    alert('グループ更新エラー: ' + err.message);
   }
 }
 
 async function deleteGroup(groupId, groupName) {
-  if (!confirm(`Are you sure you want to delete the group "${groupName}"?`)) {
+  if (!confirm(`グループ "${groupName}" を削除してもよろしいですか？`)) {
     return;
   }
 
   try {
-    console.log('Deleting group:', groupId);
-
-    const response = await fetch(`/groups/${groupId}`, {
-      method: 'DELETE'
+    console.log('グループ削除:', groupId);
+    await runMutation({
+      url: `/groups/${groupId}`,
+      method: 'DELETE',
+      successMessage: 'グループを削除しました！',
+      failureLabel: 'グループの削除に失敗しました',
+      onSuccess: loadGroups
     });
-
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      alert('Group deleted successfully!');
-      loadGroups();
-    } else {
-      alert(`Failed to delete group: ${response.status} - ${responseText}`);
-    }
   } catch (err) {
-    console.error('Error deleting group:', err);
-    alert('Error deleting group: ' + err.message);
+    console.error('グループ削除エラー:', err);
+    alert('グループ削除エラー: ' + err.message);
   }
 }
 
@@ -1228,87 +1497,61 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // 曲フォーム
   const form = document.getElementById('addSongForm');
-  form.addEventListener('submit', addSong);
+  if (form) form.addEventListener('submit', addSong);
 
   const editForm = document.getElementById('editSongForm');
-  editForm.addEventListener('submit', updateSong);
+  if (editForm) editForm.addEventListener('submit', updateSong);
 
   // アルバムフォーム
   const albumForm = document.getElementById('addAlbumForm');
-  albumForm.addEventListener('submit', addAlbum);
+  if (albumForm) albumForm.addEventListener('submit', addAlbum);
 
   const editAlbumForm = document.getElementById('editAlbumForm');
-  editAlbumForm.addEventListener('submit', updateAlbum);
-
-  // クリエイターフォーム
-  const creatorForm = document.getElementById('addCreatorForm');
-  creatorForm.addEventListener('submit', addCreator);
-
-  const editCreatorForm = document.getElementById('editCreatorForm');
-  editCreatorForm.addEventListener('submit', updateCreator);
+  if (editAlbumForm) editAlbumForm.addEventListener('submit', updateAlbum);
 
   // タグフォーム
   const tagForm = document.getElementById('addTagForm');
-  tagForm.addEventListener('submit', addTag);
+  if (tagForm) tagForm.addEventListener('submit', addTag);
 
   const editTagForm = document.getElementById('editTagForm');
-  editTagForm.addEventListener('submit', updateTag);
+  if (editTagForm) editTagForm.addEventListener('submit', updateTag);
 
   // アーティストフォーム
   const artistForm = document.getElementById('addArtistForm');
-  artistForm.addEventListener('submit', addArtist);
+  if (artistForm) artistForm.addEventListener('submit', addArtist);
 
   const editArtistForm = document.getElementById('editArtistForm');
-  editArtistForm.addEventListener('submit', updateArtist);
+  if (editArtistForm) editArtistForm.addEventListener('submit', updateArtist);
 
   // グループフォーム
   const groupForm = document.getElementById('addGroupForm');
-  groupForm.addEventListener('submit', addGroup);
+  if (groupForm) groupForm.addEventListener('submit', addGroup);
 
   const editGroupForm = document.getElementById('editGroupForm');
-  editGroupForm.addEventListener('submit', updateGroup);
+  if (editGroupForm) editGroupForm.addEventListener('submit', updateGroup);
 
   // 曲編集モーダルの閉じる処理
   const modal = document.getElementById('editModal');
   const closeBtn = document.querySelector('.close');
   const cancelBtn = document.getElementById('cancelEdit');
 
-  closeBtn.onclick = closeEditModal;
-  cancelBtn.onclick = closeEditModal;
-
-  window.onclick = function(event) {
-    if (event.target === modal) {
-      closeEditModal();
-    }
-  };
+  if (closeBtn) closeBtn.onclick = closeEditModal;
+  if (cancelBtn) cancelBtn.onclick = closeEditModal;
 
   // アルバム編集モーダルの閉じる処理
   const albumModal = document.getElementById('editAlbumModal');
   const closeAlbumBtn = document.querySelector('.close-album');
   const cancelAlbumBtn = document.getElementById('cancelEditAlbum');
 
-  closeAlbumBtn.onclick = closeEditAlbumModal;
-  cancelAlbumBtn.onclick = closeEditAlbumModal;
+  if (closeAlbumBtn) closeAlbumBtn.onclick = closeEditAlbumModal;
+  if (cancelAlbumBtn) cancelAlbumBtn.onclick = closeEditAlbumModal;
 
-  window.onclick = function(event) {
-    if (event.target === albumModal) {
-      closeEditAlbumModal();
-    }
-  };
-
-  // クリエイター編集モーダルの閉じる処理
-  const creatorModal = document.getElementById('editCreatorModal');
-  const closeCreatorBtn = document.querySelector('.close-creator');
-  const cancelCreatorBtn = document.getElementById('cancelEditCreator');
-
-  closeCreatorBtn.onclick = closeEditCreatorModal;
-  cancelCreatorBtn.onclick = closeEditCreatorModal;
-
-  window.onclick = function(event) {
-    if (event.target === creatorModal) {
-      closeEditCreatorModal();
-    }
-  };
+  // 詳細確認モーダルの閉じる処理
+  const detailModal = document.getElementById('detailModal');
+  const closeDetailBtn = document.querySelector('.close-detail');
+  const closeDetailModalBtn = document.getElementById('closeDetailModal');
+  if (closeDetailBtn) closeDetailBtn.onclick = closeDetailModal;
+  if (closeDetailModalBtn) closeDetailModalBtn.onclick = closeDetailModal;
 
   // タグ編集モーダルの閉じる処理
   const tagModal = document.getElementById('editTagModal');
@@ -1319,11 +1562,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeTagBtn) closeTagBtn.onclick = closeEditTagModal;
     if (cancelTagBtn) cancelTagBtn.onclick = closeEditTagModal;
 
-    window.onclick = function(event) {
-      if (event.target === tagModal) {
-        closeEditTagModal();
-      }
-    };
   }
 
   // アーティスト編集モーダルの閉じる処理
@@ -1335,11 +1573,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeArtistBtn) closeArtistBtn.onclick = closeEditArtistModal;
     if (cancelArtistBtn) cancelArtistBtn.onclick = closeEditArtistModal;
 
-    window.onclick = function(event) {
-      if (event.target === artistModal) {
-        closeEditArtistModal();
-      }
-    };
   }
 
   // グループ編集モーダルの閉じる処理
@@ -1351,11 +1584,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeGroupBtn) closeGroupBtn.onclick = closeEditGroupModal;
     if (cancelGroupBtn) cancelGroupBtn.onclick = closeEditGroupModal;
 
-    window.onclick = function(event) {
-      if (event.target === groupModal) {
-        closeEditGroupModal();
-      }
-    };
   }
 
   // 曲選択モーダルの閉じる処理
@@ -1364,56 +1592,42 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelSongsBtn = document.getElementById('cancelAddSongs');
   const addSongsForm = document.getElementById('addSongsForm');
 
-  closeSongsBtn.onclick = closeAddSongsModal;
-  cancelSongsBtn.onclick = closeAddSongsModal;
-  addSongsForm.addEventListener('submit', saveSongsToAlbum);
+  if (closeSongsBtn) closeSongsBtn.onclick = closeAddSongsModal;
+  if (cancelSongsBtn) cancelSongsBtn.onclick = closeAddSongsModal;
+  if (addSongsForm) addSongsForm.addEventListener('submit', saveSongsToAlbum);
 
-  window.onclick = function(event) {
-    if (event.target === songsModal) {
-      closeAddSongsModal();
-    }
-    if (event.target === creatorModal) {
-      closeEditCreatorModal();
-    }
-    if (event.target === albumModal) {
-      closeEditAlbumModal();
-    }
-    if (event.target === modal) {
-      closeEditModal();
-    }
-  };
+  // 曲タグ紐付けモーダルの閉じる処理
+  const tagsBindModal = document.getElementById('addTagsModal');
+  const closeTagsBindBtn = document.querySelector('.close-tags');
+  const cancelTagsBindBtn = document.getElementById('cancelAddTags');
+  const addTagsForm = document.getElementById('addTagsForm');
 
-  // アルバム編集モーダルのカテゴリ選択肢を埋める
-  const editAlbumSelect = document.getElementById('editAlbumCreatorSelect');
-  const albumSelect = document.getElementById('albumArtistSelect');
-  
-  // 既に作成されたオプションをコピー
-  Array.from(albumSelect.options).forEach(option => {
-    if (option.value !== '') {
-      const newOption = option.cloneNode(true);
-      editAlbumSelect.appendChild(newOption);
-    }
+  if (closeTagsBindBtn) closeTagsBindBtn.onclick = closeAddTagsModal;
+  if (cancelTagsBindBtn) cancelTagsBindBtn.onclick = closeAddTagsModal;
+  if (addTagsForm) addTagsForm.addEventListener('submit', saveTagsToMusic);
+
+  // グループメンバー追加モーダルの閉じる処理
+  const membersModal = document.getElementById('addMembersModal');
+  const closeMembersBtn = document.querySelector('.close-members');
+  const cancelMembersBtn = document.getElementById('cancelAddMembers');
+  const addMembersForm = document.getElementById('addMembersForm');
+
+  if (closeMembersBtn) closeMembersBtn.onclick = closeAddMembersModal;
+  if (cancelMembersBtn) cancelMembersBtn.onclick = closeAddMembersModal;
+  if (addMembersForm) addMembersForm.addEventListener('submit', saveMembersToGroup);
+
+  // すべてのモーダルの外側クリックを1つのハンドラで処理
+  window.addEventListener('click', (event) => {
+    if (event.target === modal) closeEditModal();
+    if (event.target === albumModal) closeEditAlbumModal();
+    if (event.target === detailModal) closeDetailModal();
+    if (tagModal && event.target === tagModal) closeEditTagModal();
+    if (artistModal && event.target === artistModal) closeEditArtistModal();
+    if (groupModal && event.target === groupModal) closeEditGroupModal();
+    if (event.target === songsModal) closeAddSongsModal();
+    if (tagsBindModal && event.target === tagsBindModal) closeAddTagsModal();
+    if (membersModal && event.target === membersModal) closeAddMembersModal();
   });
 
-  // アーティスト編集モーダルの選択肢を埋める
-  const editArtistCreatorSelect = document.getElementById('editArtistCreatorSelect');
-  const artistCreatorSelect = document.getElementById('artistCreatorSelect');
-  
-  Array.from(artistCreatorSelect.options).forEach(option => {
-    if (option.value !== '') {
-      const newOption = option.cloneNode(true);
-      editArtistCreatorSelect.appendChild(newOption);
-    }
-  });
-
-  // グループ編集モーダルの選択肢を埋める
-  const editGroupCreatorSelect = document.getElementById('editGroupCreatorSelect');
-  const groupCreatorSelect = document.getElementById('groupCreatorSelect');
-  
-  Array.from(groupCreatorSelect.options).forEach(option => {
-    if (option.value !== '') {
-      const newOption = option.cloneNode(true);
-      editGroupCreatorSelect.appendChild(newOption);
-    }
-  });
+  // 各編集用セレクトは loadCreators() で都度再構築する
 });

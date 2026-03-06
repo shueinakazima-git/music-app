@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Setlist Generator</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -10,9 +11,97 @@
 <div class="container">
   <h1>🎲 Setlist Generator</h1>
 
-  <button onclick="generateSetlist()">Generate</button>
+  <div class="form-section">
+    <h2>検索条件</h2>
+    <form id="generateSetlistForm">
+      <div class="form-group">
+        <label for="targetMinutes">目標時間（分）:</label>
+        <input type="number" id="targetMinutes" min="1" value="30" required>
+      </div>
+      <div class="form-group">
+        <label>要素（Creator / Tag）: 最大5件</label>
+        <div class="form-group">
+          <select id="elementSlot1">
+            <option value="">選択なし</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <select id="elementSlot2">
+            <option value="">選択なし</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <select id="elementSlot3">
+            <option value="">選択なし</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <select id="elementSlot4">
+            <option value="">選択なし</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <select id="elementSlot5">
+            <option value="">選択なし</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="allowDuplicates">
+          セットリスト内の重複を許可する
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="preferBpm">
+          BPMに準拠する（優先）
+        </label>
+      </div>
+      <div id="bpmRangeContainer" style="display: none;">
+        <div class="form-group">
+          <label for="bpmMin">BPM（最小）:</label>
+          <input type="number" id="bpmMin" min="20" max="400" placeholder="例: 90">
+        </div>
+        <div class="form-group">
+          <label for="bpmMax">BPM（最大）:</label>
+          <input type="number" id="bpmMax" min="20" max="400" placeholder="例: 160">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="preferKey">
+          キーに準拠する（優先）
+        </label>
+      </div>
+      <div class="form-group" id="keyFilterContainer" style="display: none;">
+        <label for="keyFilter">キー:</label>
+        <input type="text" id="keyFilter" maxlength="5" placeholder="例: C, Dm">
+      </div>
+      <div class="form-group">
+        <label for="maxSongs">最大曲数:</label>
+        <input type="number" id="maxSongs" min="1" value="20">
+      </div>
+      <button type="submit" class="btn-primary">セトリ生成</button>
+    </form>
+  </div>
 
-  <ul id="setlist"></ul>
+  <div class="form-section">
+    <h2>生成結果</h2>
+    <p id="setlistSummary">まだ生成されていません</p>
+    <ul id="setlist"></ul>
+  </div>
+
+  <div class="form-section">
+    <h2>保存</h2>
+    <form id="saveSetlistForm">
+      <div class="form-group">
+        <label for="setlistName">セットリスト名:</label>
+        <input type="text" id="setlistName" placeholder="例: 週末ライブ30分">
+      </div>
+      <button type="submit" class="btn-primary" id="saveSetlistBtn" disabled>保存</button>
+    </form>
+  </div>
 
   <div class="nav-buttons">
     <a href="index.html">🏠 Dashboard</a>

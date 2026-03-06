@@ -1,143 +1,192 @@
 const db = require('../db');
 
-// Get all tags
+//
+// タグ一覧取得
+//
 async function getAllTags(req, res) {
-  try {
-    const connection = await db.getConnection();
+  let conn;
 
-    const result = await connection.execute(
-      `SELECT TAG_ID, TAG_NAME, NOTE FROM tbl_tags WHERE deleted_at IS NULL ORDER BY TAG_NAME`,
-      [],
-      { outFormat: db.oracledb.OUT_FORMAT_OBJECT }
+  try {
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
+      `SELECT tag_id, tag_name, note
+       FROM tbl_tags
+       WHERE deleted_at IS NULL
+       ORDER BY tag_name`,
+      []
     );
 
-    await connection.close();
+    res.json(result.rows);
 
-    res.json(result.rows || []);
   } catch (err) {
-    console.error('Error getting tags:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('タグ取得エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Create a new tag
+//
+// タグ作成
+//
 async function createTag(req, res) {
-  const { tag_name, note } = req.body;
+  let conn;
 
-  if (!tag_name) {
-    return res.status(400).json({ error: 'tag_name is required' });
+  const { tag_name, note } = req.body;
+  const normalizedTagName = (tag_name || '').toString().trim();
+  const normalizedNote = note || null;
+
+  if (!normalizedTagName) {
+    return res.status(400).json({ error: 'タグ名は必須です' });
   }
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
 
-    const result = await connection.execute(
-      `INSERT INTO tbl_tags (tag_name, note, user_id, created_at)
-       VALUES (:tag_name, :note, 1, SYSDATE)
-       RETURNING tag_id INTO :tag_id`,
-      {
-        tag_name: tag_name,
-        note: note || null,
-        tag_id: { dir: db.oracledb.BIND_OUT, type: db.oracledb.NUMBER }
-      }
+    const existing = await conn.execute(
+      `SELECT tag_id, deleted_at
+       FROM tbl_tags
+       WHERE tag_name = $1
+       LIMIT 1`,
+      [normalizedTagName]
     );
 
-    await connection.commit();
+    if (existing.rows.length > 0) {
+      const found = existing.rows[0];
 
-    const tagId = result.outBinds.tag_id[0];
+      if (!found.deleted_at) {
+        return res.status(409).json({
+          error: '同名のタグが既に存在します',
+          tag_id: found.tag_id
+        });
+      }
 
-    await connection.close();
+      await conn.execute(
+        `UPDATE tbl_tags
+         SET note = $1,
+             user_id = $2,
+             deleted_at = NULL
+         WHERE tag_id = $3`,
+        [normalizedNote, 1, found.tag_id]
+      );
+
+      return res.status(200).json({
+        message: 'タグを復元しました',
+        tag_id: found.tag_id,
+        tag_name: normalizedTagName,
+        note: normalizedNote
+      });
+    }
+
+    const result = await conn.execute(
+      `INSERT INTO tbl_tags (tag_name, note, user_id, created_at)
+       VALUES ($1, $2, $3, NOW())
+       RETURNING tag_id`,
+      [normalizedTagName, normalizedNote, 1]
+    );
+
+    const tagId = result.rows[0].tag_id;
 
     res.status(201).json({
-      message: 'Tag created successfully',
+      message: 'タグを作成しました',
       tag_id: tagId,
-      tag_name: tag_name,
-      note: note || null
+      tag_name: normalizedTagName,
+      note: normalizedNote
     });
+
   } catch (err) {
-    console.error('Error creating tag:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('タグ作成エラー:', err.message);
+
+    if (err && err.code === '23505') {
+      return res.status(409).json({ error: '同名のタグが既に存在します' });
+    }
+
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Update a tag
+//
+// タグ更新
+//
 async function updateTag(req, res) {
+  let conn;
+
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'invalid id' });
+    return res.status(400).json({ error: 'IDが不正です' });
   }
 
   const { tag_name, note } = req.body;
 
   if (!tag_name) {
-    return res.status(400).json({ error: 'tag_name is required' });
+    return res.status(400).json({ error: 'タグ名は必須です' });
   }
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
 
-    const result = await connection.execute(
+    const result = await conn.execute(
       `UPDATE tbl_tags
-       SET tag_name = :tag_name, note = :note
-       WHERE tag_id = :tag_id`,
-      {
-        tag_name: tag_name,
-        note: note || null,
-        tag_id: id
-      }
+       SET tag_name = $1,
+           note = $2
+       WHERE tag_id = $3`,
+      [tag_name, note || null, id]
     );
 
-    await connection.commit();
-
-    if (result.rowsAffected === 0) {
-      await connection.close();
-      return res.status(404).json({ error: 'Tag not found' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'タグが見つかりません' });
     }
 
-    await connection.close();
-
     res.json({
-      message: 'Tag updated successfully',
+      message: 'タグを更新しました',
       tag_id: id,
-      tag_name: tag_name,
+      tag_name,
       note: note || null
     });
+
   } catch (err) {
-    console.error('Error updating tag:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('タグ更新エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Delete a tag (soft delete)
+//
+// タグ削除（ソフトデリート）
+//
 async function deleteTag(req, res) {
+  let conn;
+
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'invalid id' });
+    return res.status(400).json({ error: 'IDが不正です' });
   }
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
 
-    const result = await connection.execute(
+    const result = await conn.execute(
       `UPDATE tbl_tags
-       SET deleted_at = SYSDATE
-       WHERE tag_id = :tag_id`,
-      { tag_id: id }
+       SET deleted_at = NOW()
+       WHERE tag_id = $1`,
+      [id]
     );
 
-    await connection.commit();
-
-    if (result.rowsAffected === 0) {
-      await connection.close();
-      return res.status(404).json({ error: 'Tag not found' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'タグが見つかりません' });
     }
 
-    await connection.close();
+    res.json({ message: 'タグを削除しました' });
 
-    res.json({ message: 'Tag deleted successfully' });
   } catch (err) {
-    console.error('Error deleting tag:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('タグ削除エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 

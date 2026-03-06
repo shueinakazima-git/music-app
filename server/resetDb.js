@@ -1,17 +1,11 @@
-const oracledb = require('oracledb');
+const db = require('./db');
 
 async function resetDatabase() {
   let conn;
   try {
-    conn = await oracledb.getConnection({
-      user: 'system',
-      password: 'Password123',
-      connectString: 'localhost/FREEPDB1'
-    });
+    conn = await db.getConnection();
+    console.log('データベースのリセットを開始します');
 
-    console.log('Connected to database. Starting reset...\n');
-
-    // テーブルをDROP（外部キー制約のため逆順）
     const tables = [
       'tbl_chord_progression',
       'tbl_music_tags',
@@ -31,31 +25,16 @@ async function resetDatabase() {
     ];
 
     for (const table of tables) {
-      try {
-        await conn.execute(`DROP TABLE ${table}`);
-        console.log(`✓ Dropped ${table}`);
-      } catch (err) {
-        if (err.errorNum === 942) {
-          console.log(`  ${table} does not exist (skipping)`);
-        } else {
-          throw err;
-        }
-      }
+      await conn.execute(`DROP TABLE IF EXISTS ${table} CASCADE`);
+      console.log(`削除: ${table}`);
     }
 
-    console.log('\n✅ Database reset completed!\n');
-    console.log('Now run: node server/initDb.js');
-
+    console.log('データベースのリセットが完了しました');
   } catch (err) {
-    console.error('❌ Error:', err.message);
+    console.error('リセットエラー:', err);
+    process.exitCode = 1;
   } finally {
-    if (conn) {
-      try {
-        await conn.close();
-      } catch (err) {
-        console.error('Error closing connection:', err);
-      }
-    }
+    if (conn) await conn.close();
   }
 }
 

@@ -1,192 +1,360 @@
 const db = require('../db');
 
-// Get all groups
+//
+// 全グループ取得
+//
 async function getAllGroups(req, res) {
-  try {
-    const connection = await db.getConnection();
+  let conn;
 
-    const result = await connection.execute(
-      `SELECT g.GROUP_ID, g.GROUP_ID as CREATOR_ID, c.CREATOR_NAME as GROUP_NAME, 
-              g.FORMATION_DATE, g.DISSOLUTION_DATE
-       FROM tbl_groups g
-       JOIN tbl_creators c ON g.group_id = c.creator_id
-       ORDER BY c.CREATOR_NAME`,
-      [],
-      { outFormat: db.oracledb.OUT_FORMAT_OBJECT }
+  try {
+    conn = await db.getConnection();
+
+    // GROUPクリエイターがgroupsに未登録でも表示できるよう同期
+    await conn.execute(
+      `INSERT INTO tbl_groups (group_id, group_name)
+       SELECT c.creator_id, c.creator_name
+       FROM tbl_creators c
+       WHERE c.creator_type = 'GROUP'
+         AND NOT EXISTS (
+           SELECT 1
+           FROM tbl_groups g
+           WHERE g.group_id = c.creator_id
+         )`,
+      []
     );
 
-    await connection.close();
+    await conn.execute(
+      `UPDATE tbl_groups g
+       SET group_name = c.creator_name
+       FROM tbl_creators c
+       WHERE g.group_id = c.creator_id
+         AND c.creator_type = 'GROUP'
+         AND g.group_name <> c.creator_name`,
+      []
+    );
 
-    res.json(result.rows || []);
+    const result = await conn.execute(
+      `SELECT 
+         g.group_id,
+         g.group_id AS creator_id,
+         c.creator_name AS group_name,
+         TO_CHAR(g.formation_date, 'YYYY-MM-DD') AS formation_date,
+         TO_CHAR(g.dissolution_date, 'YYYY-MM-DD') AS dissolution_date
+       FROM tbl_groups g
+       JOIN tbl_creators c ON g.group_id = c.creator_id
+       ORDER BY c.creator_name`,
+      []
+    );
+
+    res.json(result.rows);
+
   } catch (err) {
-    console.error('Error getting groups:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('グループ取得エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Create a new group
+//
+// グループ作成
+//
 async function createGroup(req, res) {
+  let conn;
+
   const { creator_id, formation_date, dissolution_date } = req.body;
 
   if (!creator_id) {
-    return res.status(400).json({ error: 'creator_id is required' });
+    return res.status(400).json({ error: 'クリエイターIDは必須です' });
   }
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
 
-    // Check if creator exists and is GROUP type
-    const creatorCheck = await connection.execute(
-      `SELECT creator_type FROM tbl_creators WHERE creator_id = :creator_id`,
-      { creator_id: creator_id },
-      { outFormat: db.oracledb.OUT_FORMAT_OBJECT }
+    const creatorCheck = await conn.execute(
+      `SELECT creator_name, creator_type
+       FROM tbl_creators
+       WHERE creator_id = $1`,
+      [creator_id]
     );
 
     if (creatorCheck.rows.length === 0) {
-      await connection.close();
-      return res.status(400).json({ error: 'Creator not found' });
+      return res.status(400).json({ error: 'クリエイターが見つかりません' });
     }
 
-    if (creatorCheck.rows[0].CREATOR_TYPE !== 'GROUP') {
-      await connection.close();
-      return res.status(400).json({ error: 'Only GROUP creators can be groups' });
+    if (creatorCheck.rows[0].creator_type !== 'GROUP') {
+      return res.status(400).json({ error: 'GROUPタイプのクリエイターのみグループ登録できます' });
     }
 
-    // Check if group already exists for this creator
-    const groupCheck = await connection.execute(
-      `SELECT group_id FROM tbl_groups WHERE group_id = :group_id`,
-      { group_id: creator_id }
+    const groupCheck = await conn.execute(
+      `SELECT group_id
+       FROM tbl_groups
+       WHERE group_id = $1`,
+      [creator_id]
     );
 
     if (groupCheck.rows.length > 0) {
-      await connection.close();
-      return res.status(400).json({ error: 'Group already exists for this creator' });
+      return res.status(400).json({ error: 'このクリエイターのグループは既に存在します' });
     }
 
-    const result = await connection.execute(
-      `INSERT INTO tbl_groups (group_id, group_name, formation_date, dissolution_date)
-       VALUES (:group_id, 
-               :group_name,
-               TO_DATE(:formation_date, 'YYYY-MM-DD'), 
-               TO_DATE(:dissolution_date, 'YYYY-MM-DD'))`,
-      {
-        group_id: creator_id,
-        group_name: creatorCheck.rows[0].CREATOR_NAME || 'Unknown',
-        formation_date: formation_date || null,
-        dissolution_date: dissolution_date || null
-      }
+    await conn.execute(
+      `INSERT INTO tbl_groups
+       (group_id, group_name, formation_date, dissolution_date)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        creator_id,
+        creatorCheck.rows[0].creator_name,
+        formation_date || null,
+        dissolution_date || null
+      ]
     );
 
-    await connection.commit();
-
-    await connection.close();
-
     res.status(201).json({
-      message: 'Group created successfully',
+      message: 'グループを作成しました',
       group_id: creator_id,
       creator_id: creator_id
     });
+
   } catch (err) {
-    console.error('Error creating group:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('グループ作成エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Update a group
+//
+// グループ更新
+//
 async function updateGroup(req, res) {
+  let conn;
+
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'invalid id' });
+    return res.status(400).json({ error: 'IDが不正です' });
   }
 
-  const { creator_id, formation_date, dissolution_date } = req.body;
-
-  if (!creator_id) {
-    return res.status(400).json({ error: 'creator_id is required' });
-  }
+  const { formation_date, dissolution_date } = req.body;
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
 
-    // Check if creator exists and is GROUP type
-    const creatorCheck = await connection.execute(
-      `SELECT creator_type FROM tbl_creators WHERE creator_id = :creator_id`,
-      { creator_id: creator_id },
-      { outFormat: db.oracledb.OUT_FORMAT_OBJECT }
-    );
-
-    if (creatorCheck.rows.length === 0) {
-      await connection.close();
-      return res.status(400).json({ error: 'Creator not found' });
-    }
-
-    if (creatorCheck.rows[0].CREATOR_TYPE !== 'GROUP') {
-      await connection.close();
-      return res.status(400).json({ error: 'Only GROUP creators can be groups' });
-    }
-
-    const result = await connection.execute(
+    const result = await conn.execute(
       `UPDATE tbl_groups
-       SET group_id = :new_group_id, 
-           formation_date = TO_DATE(:formation_date, 'YYYY-MM-DD'), 
-           dissolution_date = TO_DATE(:dissolution_date, 'YYYY-MM-DD')
-       WHERE group_id = :group_id`,
-      {
-        new_group_id: creator_id,
-        formation_date: formation_date || null,
-        dissolution_date: dissolution_date || null,
-        group_id: id
-      }
+       SET 
+           formation_date = $1,
+           dissolution_date = $2
+       WHERE group_id = $3`,
+      [
+        formation_date || null,
+        dissolution_date || null,
+        id
+      ]
     );
 
-    await connection.commit();
-
-    if (result.rowsAffected === 0) {
-      await connection.close();
-      return res.status(404).json({ error: 'Group not found' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'グループが見つかりません' });
     }
-
-    await connection.close();
 
     res.json({
-      message: 'Group updated successfully',
-      group_id: id,
-      creator_id: creator_id
+      message: 'グループを更新しました',
+      group_id: id
     });
+
   } catch (err) {
-    console.error('Error updating group:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('グループ更新エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
-// Delete a group
+//
+// グループ削除
+//
 async function deleteGroup(req, res) {
+  let conn;
+
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(400).json({ error: 'invalid id' });
+    return res.status(400).json({ error: 'IDが不正です' });
   }
 
   try {
-    const connection = await db.getConnection();
+    conn = await db.getConnection();
+    await conn.execute('BEGIN');
 
-    const result = await connection.execute(
-      `DELETE FROM tbl_groups WHERE group_id = :group_id`,
-      { group_id: id }
+    const result = await conn.execute(
+      `DELETE FROM tbl_creators
+       WHERE creator_id = $1
+         AND creator_type = 'GROUP'`,
+      [id]
     );
 
-    await connection.commit();
-
-    if (result.rowsAffected === 0) {
-      await connection.close();
-      return res.status(404).json({ error: 'Group not found' });
+    if (result.rowCount === 0) {
+      await conn.execute('ROLLBACK');
+      return res.status(404).json({ error: 'グループが見つかりません' });
     }
 
-    await connection.close();
+    await conn.execute('COMMIT');
+    res.json({ message: 'グループを削除しました' });
 
-    res.json({ message: 'Group deleted successfully' });
   } catch (err) {
-    console.error('Error deleting group:', err.message);
-    res.status(500).json({ error: err.message });
+    if (conn) await conn.execute('ROLLBACK');
+    if (err && err.code === '23503') {
+      return res.status(409).json({
+        error: '関連する楽曲・アルバム等が存在するため削除できません'
+      });
+    }
+    console.error('グループ削除エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
+  }
+}
+
+//
+// グループメンバー取得
+//
+async function getGroupMembers(req, res) {
+  let conn;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'IDが不正です' });
+  }
+
+  try {
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
+      `SELECT
+         gm.artist_id,
+         c.creator_name AS artist_name,
+         gm.join_date,
+         gm.leave_date
+       FROM tbl_group_members gm
+       JOIN tbl_artists a
+         ON gm.artist_id = a.artist_id
+       JOIN tbl_creators c
+         ON a.artist_id = c.creator_id
+       WHERE gm.group_id = $1
+       ORDER BY c.creator_name`,
+      [id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('グループメンバー取得エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
+  }
+}
+
+//
+// グループに追加可能なアーティスト取得
+//
+async function getAvailableArtists(req, res) {
+  let conn;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'IDが不正です' });
+  }
+
+  try {
+    conn = await db.getConnection();
+
+    const result = await conn.execute(
+      `SELECT
+         c.creator_id AS artist_id,
+         c.creator_name AS artist_name
+       FROM tbl_creators c
+       WHERE c.creator_type = 'SOLO'
+         AND c.creator_id NOT IN (
+         SELECT gm.artist_id
+         FROM tbl_group_members gm
+         WHERE gm.group_id = $1
+       )
+       ORDER BY c.creator_name`,
+      [id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('追加可能アーティスト取得エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
+  }
+}
+
+//
+// グループにメンバー追加
+//
+async function addMembersToGroup(req, res) {
+  let conn;
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ error: 'IDが不正です' });
+  }
+
+  const { artist_ids } = req.body || {};
+  if (!Array.isArray(artist_ids) || artist_ids.length === 0) {
+    return res.status(400).json({ error: 'アーティストが指定されていません' });
+  }
+
+  const uniqueArtistIds = [...new Set(artist_ids.map((v) => Number(v)).filter((v) => !Number.isNaN(v)))];
+  if (uniqueArtistIds.length === 0) {
+    return res.status(400).json({ error: 'アーティストが指定されていません' });
+  }
+
+  try {
+    conn = await db.getConnection();
+    await conn.execute('BEGIN');
+
+    for (const artistId of uniqueArtistIds) {
+      const creatorResult = await conn.execute(
+        `SELECT creator_name, creator_type
+         FROM tbl_creators
+         WHERE creator_id = $1`,
+        [artistId]
+      );
+
+      if (creatorResult.rows.length === 0) {
+        await conn.execute('ROLLBACK');
+        return res.status(400).json({ error: `クリエイターID ${artistId} が存在しません` });
+      }
+
+      const creator = creatorResult.rows[0];
+      if (creator.creator_type !== 'SOLO') {
+        await conn.execute('ROLLBACK');
+        return res.status(400).json({ error: `クリエイターID ${artistId} はSOLOではありません` });
+      }
+
+      // SOLOクリエイターのみ登録されているケースに対応し、artistを自動補完
+      await conn.execute(
+        `INSERT INTO tbl_artists (artist_id, artist_name)
+         VALUES ($1, $2)
+         ON CONFLICT (artist_id) DO NOTHING`,
+        [artistId, creator.creator_name]
+      );
+
+      await conn.execute(
+        `INSERT INTO tbl_group_members (group_id, artist_id, join_date)
+         VALUES ($1, $2, CURRENT_DATE)
+         ON CONFLICT (group_id, artist_id) DO NOTHING`,
+        [id, artistId]
+      );
+    }
+
+    await conn.execute('COMMIT');
+    res.json({ message: 'グループにアーティストを追加しました' });
+  } catch (err) {
+    if (conn) await conn.execute('ROLLBACK');
+    console.error('グループメンバー追加エラー:', err.message);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  } finally {
+    if (conn) await conn.close();
   }
 }
 
@@ -194,5 +362,8 @@ module.exports = {
   getAllGroups,
   createGroup,
   updateGroup,
-  deleteGroup
+  deleteGroup,
+  getGroupMembers,
+  getAvailableArtists,
+  addMembersToGroup
 };
