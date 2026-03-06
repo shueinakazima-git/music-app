@@ -9,6 +9,30 @@ async function getAllGroups(req, res) {
   try {
     conn = await db.getConnection();
 
+    // GROUPクリエイターがgroupsに未登録でも表示できるよう同期
+    await conn.execute(
+      `INSERT INTO tbl_groups (group_id, group_name)
+       SELECT c.creator_id, c.creator_name
+       FROM tbl_creators c
+       WHERE c.creator_type = 'GROUP'
+         AND NOT EXISTS (
+           SELECT 1
+           FROM tbl_groups g
+           WHERE g.group_id = c.creator_id
+         )`,
+      []
+    );
+
+    await conn.execute(
+      `UPDATE tbl_groups g
+       SET group_name = c.creator_name
+       FROM tbl_creators c
+       WHERE g.group_id = c.creator_id
+         AND c.creator_type = 'GROUP'
+         AND g.group_name <> c.creator_name`,
+      []
+    );
+
     const result = await conn.execute(
       `SELECT 
          g.group_id,
@@ -158,19 +182,30 @@ async function deleteGroup(req, res) {
 
   try {
     conn = await db.getConnection();
+    await conn.execute('BEGIN');
 
     const result = await conn.execute(
-      `DELETE FROM tbl_groups WHERE group_id = $1`,
+      `DELETE FROM tbl_creators
+       WHERE creator_id = $1
+         AND creator_type = 'GROUP'`,
       [id]
     );
 
     if (result.rowCount === 0) {
+      await conn.execute('ROLLBACK');
       return res.status(404).json({ error: 'グループが見つかりません' });
     }
 
+    await conn.execute('COMMIT');
     res.json({ message: 'グループを削除しました' });
 
   } catch (err) {
+    if (conn) await conn.execute('ROLLBACK');
+    if (err && err.code === '23503') {
+      return res.status(409).json({
+        error: '関連する楽曲・アルバム等が存在するため削除できません'
+      });
+    }
     console.error('グループ削除エラー:', err.message);
     res.status(500).json({ error: 'サーバーエラーが発生しました' });
   } finally {

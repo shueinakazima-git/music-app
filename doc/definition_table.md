@@ -6,25 +6,27 @@
 - 作成日：2026/2/16
 - 更新日：2026/3/5
 
+---
+
 ## 目次・概要
 
 | NO | 物理名 | 論理名 | 用途 |
 |--- | --- | --- | --- |
-|  1 | tbl_users | ユーザ管理テーブル | ユーザを管理するテーブル。 |
-|  2 | tbl_creators | クリエイター管理テーブル | クリエイターを管理するテーブル。グループ管理テーブルとアーティスト管理テーブルの親テーブル。 |
-|  3 | tbl_artists | アーティスト管理テーブル | 単体のアーティストを管理するテーブル。原則として、一人であることを前提とする。「tbl_creators」の子テーブル。 |
-|  4 | tbl_groups | グループ管理テーブル | グループを管理するテーブル。原則として、「artists」テーブルの集合であることを前提とする。「tbl_creators」の子テーブル。 |
-|  5 | tbl_music | 曲管理テーブル | 曲を管理するテーブル。 |
-|  6 | tbl_albums | アルバム管理テーブル | アルバム(シングル曲、未リリース曲を含む)を管理するテーブル。 |
-|  7 | tbl_album_music | アルバム収録曲管理テーブル | アルバムに収録されている曲を管理するための、アルバム管理テーブルと曲管理テーブルの中間管理テーブル。 |
-|  8 | tbl_user_owned_music | 所有曲管理テーブル | ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間管理テーブル。 |
-|  9 | tbl_setlists | セットリスト管理テーブル | セットリストを管理するテーブル。 |
-| 10 | tbl_setlist_music | セットリスト収録曲管理テーブル | ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間管理テーブル。 |
-| 11 | tbl_tags | タグ管理テーブル | 音楽ジャンルや、サブカルチャー等、タグを管理するテーブル。 |
-| 12 | tbl_music_tags | 曲のタグ中間管理テーブル | 曲につけるタグを管理するための、曲テーブルとタグテーブルの中間管理テーブル。 |
-| 13 | tbl_chords | コード管理テーブル | コードを保存して管理するテーブル。 |
-| 14 | tbl_chord_progression | コード進行管理テーブル| 曲のコード進行を管理するテーブル。 |
-| 15 | tbl_group_members | グループメンバー中間管理テーブル | 「artists」テーブル、「groups」テーブルの中間管理テーブル。 |
+|  1 | [tbl_users](#tbl_users) | ユーザ管理テーブル | ユーザを管理するテーブル。 |
+|  2 | [tbl_creators](#tbl_creators) | クリエイター管理テーブル | クリエイターを管理するテーブル。グループ管理テーブルとアーティスト管理テーブルの親テーブル。 |
+|  3 | [tbl_artists](#tbl_artists) | アーティスト管理テーブル | 単体のアーティストを管理するテーブル。原則として、一人であることを前提とする。「tbl_creators」の子テーブル。 |
+|  4 | [tbl_groups](#tbl_groups) | グループ管理テーブル | グループを管理するテーブル。原則として、「artists」テーブルの集合であることを前提とする。「tbl_creators」の子テーブル。 |
+|  5 | [tbl_music](#tbl_music) | 曲管理テーブル | 曲を管理するテーブル。 |
+|  6 | [tbl_albums](#tbl_albums) | アルバム管理テーブル | アルバム(シングル曲、未リリース曲を含む)を管理するテーブル。 |
+|  7 | [tbl_album_music](#tbl_album_music) | アルバム収録曲管理テーブル | アルバムに収録されている曲を管理するための、アルバム管理テーブルと曲管理テーブルの中間管理テーブル。 |
+|  8 | [tbl_user_owned_music](#tbl_user_owned_music) | 所有曲管理テーブル | ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間管理テーブル。 |
+|  9 | [tbl_setlists](#tbl_setlists) | セットリスト管理テーブル | セットリストを管理するテーブル。 |
+| 10 | [tbl_setlist_music](#tbl_setlist_music) | セットリスト収録曲管理テーブル | ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間管理テーブル。 |
+| 11 | [tbl_tags](#tbl_tags) | タグ管理テーブル | 音楽ジャンルや、サブカルチャー等、タグを管理するテーブル。 |
+| 12 | [tbl_music_tags](#tbl_music_tags) | 曲のタグ中間管理テーブル | 曲につけるタグを管理するための、曲テーブルとタグテーブルの中間管理テーブル。 |
+| 13 | [tbl_chords](#tbl_chords) | コード管理テーブル | コードを保存して管理するテーブル。 |
+| 14 | [tbl_chord_progression](#tbl_chord_progression) | コード進行管理テーブル| 曲のコード進行を管理するテーブル。 |
+| 15 | [tbl_group_members](#tbl_group_members) | グループメンバー中間管理テーブル | 「artists」テーブル、「groups」テーブルの中間管理テーブル。 |
 
 ---
 
@@ -70,30 +72,170 @@
 |   |   |   |   | ○ | user_id | 作成者 | 「tbl_users」「user_id」を外部参照キーとする | INTEGER |
 |   |   |   |   |   | created_at | 作成日 | | DATE |
 |   |   |   |   |   | updated_at | 更新日 | | DATE |
-|   |   |   |   |   |  deleted_at|削除日||DATE |
-| 10 |tbl_setlist_music|セットリスト収録曲管理テーブル|○|○|setlist_id|セットリストID|「tbl_setlists」「setlist_id」を外部参照キーとする|INTEGER |
-|   |   |   |   |  ○|music_id|曲ID|「tbl_music」「music_id」を外部参照キーとする|INTEGER |
-|   |   |   |  ○||track_number|曲順||INTEGER |
-| 11 |tbl_tags|タグ管理テーブル|○||tag_id|タグID||INTEGER
-|   |   |   |   |   |  tag_name|タグ名||VARCHAR
-|   |   |   |   |   |  note|備考||VARCHAR
-|   |   |   |   |  ○|user_id|作成者ID|「tbl_users」「user_id」を外部参照キーとする|INTEGER
-|   |   |   |   |   |  created_at|作成日||TIMESTAMP
-|   |   |   |   |   |  deleted_at|削除日||TIMESTAMP
-| 12 |tbl_music_tags|曲のタグ中間管理テーブル|○|○|music_id|曲ID|「tbl_music」「music_id」を外部参照キーとする|INTEGER
-|   |   |   |  ○|○|tag_id|タグID|「tbl_tags」「tag_id」を外部参照キーとする|INTEGER
-|   |   |   |   |   |  created_at|作成日||TIMESTAMP
-| 13 |tbl_chords|コード管理テーブル|○||chord_id|コードID||INTEGER
-|   |   |   |   |   |  chord_name|コード名||VARCHAR
+|   |   |   |   |   |  deleted_at | 削除日 |  | DATE |
+| 10 | tbl_setlist_music | セットリスト収録曲管理テーブル | ○ | ○ | setlist_id | セットリストID | 「tbl_setlists」「setlist_id」を外部参照キーとする | INTEGER |
+|   |   |   |   | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER |
+|   |   |   | ○ |  | track_number | 曲順 |  | INTEGER |
+| 11 | tbl_tags | タグ管理テーブル | ○ |  | tag_id | タグID |  | INTEGER |
+|   |   |   |   |   |  tag_name | タグ名 |  | VARCHAR | 
+|   |   |   |   |   |  note | 備考 |  | VARCHAR 
+|   |   |   |   | ○ | user_id | 作成者ID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER
+|   |   |   |   |   |  created_at | 作成日 |  | TIMESTAMP
+|   |   |   |   |   |  deleted_at | 削除日 |  | TIMESTAMP
+| 12 | tbl_music_tags | 曲のタグ中間管理テーブル | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER
+|   |   |   | ○ | ○ | tag_id | タグID | 「tbl_tags」「tag_id」を外部参照キーとする | INTEGER
+|   |   |   |   |   |  created_at | 作成日 |  | TIMESTAMP
+| 13 | tbl_chords | コード管理テーブル | ○ |  | chord_id | コードID |  | INTEGER
+|   |   |   |   |   |  chord_name | コード名 |  | VARCHAR
 | 14 | tbl_chord_progression | コード進行管理テーブル | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER |
-|   |   |   |   |  ○|chord_id|コードID|「tbl_chord」「chord_id」を外部参照キーとする|INTEGER
-|   |   |   |   |  ○||absolute_tick|ティック|1beat=480ticks、1bar=480 x 拍数|INTEGER
+|   |   |   |   | ○ | chord_id | コードID | 「tbl_chord」「chord_id」を外部参照キーとする | INTEGER
+|   |   |   | ○ |   | absolute_tick | ティック | 1beat=480ticks、1bar=480 x 拍数 | INTEGER
 | 15 | tbl_group_members | グループメンバー中間テーブル | ○ | ○ | group_id | グループID | 「tbl_groups」「groip_id」を外部参照キーとする | INTEGER |
-|   |   |   |  ○|○|artist_id|アーティストID|「tbl_artists」「artist_id」を外部参照キーとする|INTEGER
+|   |   |   | ○ | ○ | artist_id | アーティストID | 「tbl_artists」「artist_id」を外部参照キーとする|INTEGER
 |   |   |   |   |   |  join_date | 加入日 |  | DATE |
 |   |   |   |   |   |  leave_date | 脱退日 |  | DATE |
 
 ---
+## ER図
+
+```mermaid
+erDiagram
+    tbl_users {
+        int user_id PK
+        varchar user_name
+        date date_of_birth
+    }
+
+    tbl_creators {
+        int creator_id PK
+        varchar creator_name
+        varchar creator_type
+    }
+
+    tbl_artists {
+        int artist_id PK
+        varchar artist_name
+        date date_of_birth
+        date started_at
+        date ended_at
+    }
+
+    tbl_groups {
+        int group_id PK
+        varchar group_name
+        date formation_date
+        date dissolution_date
+    }
+
+    tbl_music {
+        int music_id PK
+        varchar music_title
+        int creator_id FK
+        int lyrics_by FK
+        int composed_by FK
+        int arranged_by FK
+        int bpm
+        varchar musical_key
+        int duration_seconds
+    }
+
+    tbl_albums {
+        int album_id PK
+        varchar album_name
+        int creator_id FK
+        date release_date
+    }
+
+    tbl_album_music {
+        int album_id PK
+        int music_id PK
+        int track_number PK
+    }
+
+    tbl_user_owned_music {
+        int user_id PK
+        int music_id PK
+    }
+
+    tbl_setlists {
+        int setlist_id PK
+        varchar setlist_name
+        int user_id FK
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    tbl_setlist_music {
+        int setlist_id PK
+        int music_id PK
+        int track_number PK
+    }
+
+    tbl_tags {
+        int tag_id PK
+        varchar tag_name
+        varchar note
+        int user_id FK
+        timestamp created_at
+        timestamp deleted_at
+    }
+
+    tbl_music_tags {
+        int music_id PK
+        int tag_id PK
+        timestamp created_at
+    }
+
+    tbl_chords {
+        int chord_id PK
+        varchar chord_name
+    }
+
+    tbl_chord_progression {
+        int music_id PK
+        int chord_id FK
+        int absolute_tick PK
+    }
+
+    tbl_group_members {
+        int group_id PK
+        int artist_id PK
+        date join_date
+        date leave_date
+    }
+
+    tbl_users ||--o{ tbl_user_owned_music : owns
+    tbl_music ||--o{ tbl_user_owned_music : owned_music
+
+    tbl_users ||--o{ tbl_setlists : creates
+    tbl_setlists ||--o{ tbl_setlist_music : contains
+    tbl_music ||--o{ tbl_setlist_music : setlist_music
+
+    tbl_users ||--o{ tbl_tags : creates
+    tbl_music ||--o{ tbl_music_tags : tagged
+    tbl_tags ||--o{ tbl_music_tags : tags
+
+    tbl_creators ||--o| tbl_artists : artist_profile
+    tbl_creators ||--o| tbl_groups : group_profile
+    tbl_groups ||--o{ tbl_group_members : has_members
+    tbl_artists ||--o{ tbl_group_members : member_of
+
+    tbl_creators ||--o{ tbl_music : creator
+    tbl_creators ||--o{ tbl_music : lyricist
+    tbl_creators ||--o{ tbl_music : composer
+    tbl_creators ||--o{ tbl_music : arranger
+
+    tbl_creators ||--o{ tbl_albums : album_creator
+    tbl_albums ||--o{ tbl_album_music : contains
+    tbl_music ||--o{ tbl_album_music : included_in
+
+    tbl_music ||--o{ tbl_chord_progression : progression
+    tbl_chords ||--o{ tbl_chord_progression : used_chord
+```
+
+---
+
 
 ## tbl_users
 

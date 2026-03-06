@@ -1,4 +1,5 @@
 const db = require('../db');
+const { fetchAllCreators } = require('../services/creatorService');
 //
 // クリエイター一覧
 //
@@ -6,15 +7,8 @@ exports.getCreators = async (req, res) => {
   let conn;
   try {
     conn = await db.getConnection();
-
-    const result = await conn.execute(
-      `SELECT creator_id, creator_name, creator_type
-       FROM tbl_creators
-       ORDER BY creator_name`,
-      []
-    );
-
-    res.json(result.rows);
+    const creators = await fetchAllCreators(conn);
+    res.json(creators);
 
   } catch (err) {
     console.error(err);
@@ -31,25 +25,20 @@ exports.getStats = async (req, res) => {
   try {
     conn = await db.getConnection();
 
-    const totalSongs = await conn.execute(
-      `SELECT COUNT(*)::int AS total FROM tbl_music`,
-      []
-    );
-
-    const totalCreators = await conn.execute(
-      `SELECT COUNT(*)::int AS total FROM tbl_creators`,
-      []
-    );
-
-    const avgBpm = await conn.execute(
-      `SELECT ROUND(AVG(bpm),1) AS avg_bpm FROM tbl_music`,
-      []
-    );
+    const [totalAlbums, totalSongs, totalCreators, totalGroups, totalArtists] = await Promise.all([
+      conn.execute(`SELECT COUNT(*)::int AS total FROM tbl_albums`, []),
+      conn.execute(`SELECT COUNT(*)::int AS total FROM tbl_music`, []),
+      conn.execute(`SELECT COUNT(*)::int AS total FROM tbl_creators`, []),
+      conn.execute(`SELECT COUNT(*)::int AS total FROM tbl_groups`, []),
+      conn.execute(`SELECT COUNT(*)::int AS total FROM tbl_artists`, [])
+    ]);
 
     res.json({
+      totalAlbums: totalAlbums.rows[0]?.total || 0,
       totalSongs: totalSongs.rows[0]?.total || 0,
       totalCreators: totalCreators.rows[0]?.total || 0,
-      avgBpm: Number(avgBpm.rows[0]?.avg_bpm) || 0
+      totalGroups: totalGroups.rows[0]?.total || 0,
+      totalArtists: totalArtists.rows[0]?.total || 0
     });
 
   } catch (err) {

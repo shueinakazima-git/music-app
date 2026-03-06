@@ -69,7 +69,7 @@ CREATE TABLE tbl_album_music (
     track_number INTEGER NOT NULL,
     CONSTRAINT pk_album_music PRIMARY KEY (album_id, track_number),
     CONSTRAINT fk_am_albums FOREIGN KEY (album_id) REFERENCES tbl_albums(album_id),
-    CONSTRAINT fk_am_music FOREIGN KEY (music_id) REFERENCES tbl_music(music_id),
+    CONSTRAINT fk_am_music FOREIGN KEY (music_id) REFERENCES tbl_music(music_id) ON DELETE CASCADE,
     CONSTRAINT uq_album_music UNIQUE (album_id, music_id)
 );
 
@@ -103,7 +103,7 @@ CREATE TABLE tbl_setlist_music (
     CONSTRAINT fk_sm_setlist FOREIGN KEY (setlist_id)
         REFERENCES tbl_setlists(setlist_id),
     CONSTRAINT fk_sm_music FOREIGN KEY (music_id)
-        REFERENCES tbl_music(music_id)
+        REFERENCES tbl_music(music_id) ON DELETE CASCADE
 );
 
 CREATE TABLE tbl_tags (

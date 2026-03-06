@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Music List</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -12,52 +13,15 @@
 
   <!-- タブナビゲーション -->
   <div class="tab-navigation">
-    <button class="tab-button active" data-tab="creators">Creators</button>
-    <button class="tab-button" data-tab="songs">Songs</button>
+    <button class="tab-button active" data-tab="songs">Songs</button>
     <button class="tab-button" data-tab="albums">Albums</button>
-    <button class="tab-button" data-tab="tags">Tags</button>
     <button class="tab-button" data-tab="artists">Artists</button>
     <button class="tab-button" data-tab="groups">Groups</button>
-  </div>
-
-  <!-- ===== Creators Tab ===== -->
-  <div id="creators" class="tab-content active">
-    <div class="form-section">
-      <h2>Add New Creator</h2>
-      <form id="addCreatorForm">
-        <div class="form-group">
-          <label for="creatorName">Creator Name:</label>
-          <input type="text" id="creatorName" placeholder="Enter creator name" required>
-        </div>
-        <div class="form-group">
-          <label for="creatorType">Creator Type:</label>
-          <select id="creatorType" required>
-            <option value="">-- Select type --</option>
-            <option value="SOLO">Solo Artist</option>
-            <option value="GROUP">Group/Band</option>
-          </select>
-        </div>
-        <button type="submit" class="btn-primary">Add Creator</button>
-      </form>
-    </div>
-
-    <div class="form-section">
-      <h2>Creators</h2>
-      <table id="creatorTable" class="song-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="creatorList"></tbody>
-      </table>
-    </div>
+    <button class="tab-button" data-tab="tags">Tags</button>
   </div>
 
   <!-- ===== Songs Tab ===== -->
-  <div id="songs" class="tab-content">
+  <div id="songs" class="tab-content active">
     <div class="form-section">
       <h2>Add New Song</h2>
       <form id="addSongForm">
@@ -142,48 +106,14 @@
     </div>
   </div>
 
-  <!-- ===== Tags Tab ===== -->
-  <div id="tags" class="tab-content">
-    <div class="form-section">
-      <h2>Add New Tag</h2>
-      <form id="addTagForm">
-        <div class="form-group">
-          <label for="tagName">Tag Name:</label>
-          <input type="text" id="tagName" placeholder="Enter tag name (e.g., Rock, Jazz, Pop)" required>
-        </div>
-        <div class="form-group">
-          <label for="tagNote">Note:</label>
-          <input type="text" id="tagNote" placeholder="Optional note about this tag">
-        </div>
-        <button type="submit" class="btn-primary">Add Tag</button>
-      </form>
-    </div>
-
-    <div class="form-section">
-      <h2>Tags</h2>
-      <table id="tagTable" class="song-table">
-        <thead>
-          <tr>
-            <th>Tag Name</th>
-            <th>Note</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="tagList"></tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- ===== Artists Tab ===== -->
   <div id="artists" class="tab-content">
     <div class="form-section">
       <h2>Add New Artist</h2>
       <form id="addArtistForm">
         <div class="form-group">
-          <label for="artistCreatorSelect">Creator (Solo):</label>
-          <select id="artistCreatorSelect" required>
-            <option value="">-- Select a Solo Creator --</option>
-          </select>
+          <label for="artistName">Artist Name:</label>
+          <input type="text" id="artistName" placeholder="Enter artist name" required>
         </div>
         <div class="form-group">
           <label for="artistDoB">Date of Birth:</label>
@@ -224,10 +154,8 @@
       <h2>Add New Group</h2>
       <form id="addGroupForm">
         <div class="form-group">
-          <label for="groupCreatorSelect">Creator (Group):</label>
-          <select id="groupCreatorSelect">
-            <option value="">-- Select a Group Creator --</option>
-          </select>
+          <label for="groupName">Group Name:</label>
+          <input type="text" id="groupName" placeholder="Enter group name" required>
         </div>
         <div class="form-group">
           <label for="groupFormationDate">Formation Date:</label>
@@ -253,6 +181,38 @@
           </tr>
         </thead>
         <tbody id="groupList"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== Tags Tab ===== -->
+  <div id="tags" class="tab-content">
+    <div class="form-section">
+      <h2>Add New Tag</h2>
+      <form id="addTagForm">
+        <div class="form-group">
+          <label for="tagName">Tag Name:</label>
+          <input type="text" id="tagName" placeholder="Enter tag name (e.g., Rock, Jazz, Pop)" required>
+        </div>
+        <div class="form-group">
+          <label for="tagNote">Note:</label>
+          <input type="text" id="tagNote" placeholder="Optional note about this tag">
+        </div>
+        <button type="submit" class="btn-primary">Add Tag</button>
+      </form>
+    </div>
+
+    <div class="form-section">
+      <h2>Tags</h2>
+      <table id="tagTable" class="song-table">
+        <thead>
+          <tr>
+            <th>Tag Name</th>
+            <th>Note</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tagList"></tbody>
       </table>
     </div>
   </div>
@@ -323,31 +283,6 @@
     </div>
   </div>
 
-  <!-- クリエイター編集用モーダル -->
-  <div id="editCreatorModal" class="modal">
-    <div class="modal-content">
-      <span class="close-creator">&times;</span>
-      <h2>Edit Creator</h2>
-      <form id="editCreatorForm">
-        <input type="hidden" id="editCreatorId">
-        <div class="form-group">
-          <label for="editCreatorName">Creator Name:</label>
-          <input type="text" id="editCreatorName" required>
-        </div>
-        <div class="form-group">
-          <label for="editCreatorType">Creator Type:</label>
-          <select id="editCreatorType" required>
-            <option value="">-- Select type --</option>
-            <option value="SOLO">Solo Artist</option>
-            <option value="GROUP">Group/Band</option>
-          </select>
-        </div>
-        <button type="submit" class="btn-primary">Save Changes</button>
-        <button type="button" class="btn-secondary" id="cancelEditCreator">Cancel</button>
-      </form>
-    </div>
-  </div>
-
   <!-- タグ編集用モーダル -->
   <div id="editTagModal" class="modal">
     <div class="modal-content">
@@ -377,14 +312,8 @@
       <form id="editArtistForm">
         <input type="hidden" id="editArtistId">
         <div class="form-group">
-          <label for="editArtistCreatorSelect">Creator (Solo):</label>
-          <select id="editArtistCreatorSelect" required>
-            <option value="">-- Select a Solo Creator --</option>
-          </select>
-        </div>
-        <div class="form-group">
           <label for="editArtistName">Artist Name:</label>
-          <input type="text" id="editArtistName" required disabled>
+          <input type="text" id="editArtistName" required>
         </div>
         <div class="form-group">
           <label for="editArtistDoB">Date of Birth:</label>
@@ -411,11 +340,10 @@
       <h2>Edit Group</h2>
       <form id="editGroupForm">
         <input type="hidden" id="editGroupId">
-        <input type="hidden" id="editGroupCreatorId">
 
         <div class="form-group">
           <label for="editGroupName">Group Name:</label>
-          <input type="text" id="editGroupName" required disabled>
+          <input type="text" id="editGroupName" required>
         </div>
         <div class="form-group">
           <label for="editGroupFormationDate">Formation Date:</label>

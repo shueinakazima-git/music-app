@@ -4,11 +4,8 @@ async function resetDatabase() {
   let conn;
   try {
     conn = await db.getConnection();
-    const isPg = db.dbType === 'postgres';
+    console.log('データベースのリセットを開始します');
 
-    console.log('データベースに接続しました。リセットを開始します...\n');
-
-    // テーブルをDROP（外部キー制約のため逆順）
     const tables = [
       'tbl_chord_progression',
       'tbl_music_tags',
@@ -28,34 +25,16 @@ async function resetDatabase() {
     ];
 
     for (const table of tables) {
-      const sql = isPg
-        ? `DROP TABLE IF EXISTS ${table} CASCADE`
-        : `DROP TABLE ${table}`;
-      try {
-        await conn.execute(sql);
-        console.log(`✓ ${table} を削除しました`);
-      } catch (err) {
-        if (!isPg && err.errorNum === 942) {
-          console.log(`  ${table} は存在しないためスキップします`);
-        } else {
-          throw err;
-        }
-      }
+      await conn.execute(`DROP TABLE IF EXISTS ${table} CASCADE`);
+      console.log(`削除: ${table}`);
     }
 
-    console.log('\n✅ データベースのリセットが完了しました！\n');
-    console.log('次を実行してください: node server/initDb.js');
-
+    console.log('データベースのリセットが完了しました');
   } catch (err) {
-    console.error('❌ エラー:', err.message || err);
+    console.error('リセットエラー:', err);
+    process.exitCode = 1;
   } finally {
-    if (conn) {
-      try {
-        await conn.close();
-      } catch (err) {
-        console.error('接続クローズエラー:', err);
-      }
-    }
+    if (conn) await conn.close();
   }
 }
 

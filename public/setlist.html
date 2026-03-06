@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Setlist Generator</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -46,13 +47,13 @@
         </div>
       </div>
       <div class="form-group">
-        <label>
+        <label class="checkbox-label">
           <input type="checkbox" id="allowDuplicates">
           セットリスト内の重複を許可する
         </label>
       </div>
       <div class="form-group">
-        <label>
+        <label class="checkbox-label">
           <input type="checkbox" id="preferBpm">
           BPMに準拠する（優先）
         </label>
@@ -68,12 +69,12 @@
         </div>
       </div>
       <div class="form-group">
-        <label>
+        <label class="checkbox-label">
           <input type="checkbox" id="preferKey">
           キーに準拠する（優先）
         </label>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="keyFilterContainer" style="display: none;">
         <label for="keyFilter">キー:</label>
         <input type="text" id="keyFilter" maxlength="5" placeholder="例: C, Dm">
       </div>

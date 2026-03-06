@@ -8,19 +8,19 @@ function formatDuration(seconds) {
 }
 
 function getSelectedElements() {
-  const slots = [1, 2, 3, 4, 5];
-  const values = slots
-    .map((idx) => document.getElementById(`elementSlot${idx}`)?.value || '')
-    .filter((v) => v !== '');
-  return [...new Set(values)];
+  return [...new Set(getElementSlotValues())];
 }
 
 function hasDuplicateElementSelection() {
+  const values = getElementSlotValues();
+  return new Set(values).size !== values.length;
+}
+
+function getElementSlotValues() {
   const slots = [1, 2, 3, 4, 5];
-  const values = slots
+  return slots
     .map((idx) => document.getElementById(`elementSlot${idx}`)?.value || '')
     .filter((v) => v !== '');
-  return new Set(values).size !== values.length;
 }
 
 function toggleBpmRangeVisibility() {
@@ -32,6 +32,15 @@ function toggleBpmRangeVisibility() {
   container.style.display = preferBpm ? 'block' : 'none';
   bpmMin.disabled = !preferBpm;
   bpmMax.disabled = !preferBpm;
+}
+
+function toggleKeyFilterVisibility() {
+  const preferKey = document.getElementById('preferKey').checked;
+  const container = document.getElementById('keyFilterContainer');
+  const keyFilter = document.getElementById('keyFilter');
+
+  container.style.display = preferKey ? 'block' : 'none';
+  keyFilter.disabled = !preferKey;
 }
 
 async function loadOptions() {
@@ -186,13 +195,15 @@ async function saveSetlist(event) {
 document.addEventListener('DOMContentLoaded', () => {
   loadOptions();
   toggleBpmRangeVisibility();
+  toggleKeyFilterVisibility();
 
   const generateForm = document.getElementById('generateSetlistForm');
   const saveForm = document.getElementById('saveSetlistForm');
   const preferBpm = document.getElementById('preferBpm');
+  const preferKey = document.getElementById('preferKey');
 
   generateForm.addEventListener('submit', generateSetlist);
   saveForm.addEventListener('submit', saveSetlist);
   preferBpm.addEventListener('change', toggleBpmRangeVisibility);
+  preferKey.addEventListener('change', toggleKeyFilterVisibility);
 });
-
