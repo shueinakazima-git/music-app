@@ -23,10 +23,13 @@
 | Database | PostgreSQL |
 | Driver | pg |
 | Frontend | HTML / CSS / Vanilla JS |
+| Container | Docker / Docker Compose |
 | Test | Node.js built-in test runner (`node --test`) |
 
 ## 必要環境
 
+- Docker 24 以上 / Docker Compose v2 推奨
+- ローカル実行する場合のみ:
 - Node.js 18 以上
 - npm 9 以上
 - PostgreSQL 13 以上
@@ -40,30 +43,98 @@ git clone https://github.com/shueinakazima-git/music-app.git
 cd music-app
 ```
 
-2. 依存関係をインストール
+## Docker での起動
+
+### 前提
+
+`docker-compose.yml` では以下の 2 サービスを起動します。
+
+- `app`: Node.js / Express アプリケーション
+- `db`: PostgreSQL
+
+`.env` がなくても起動できます。必要に応じて環境変数を上書きしてください。
+
+### 起動
+
+```bash
+docker compose up -d --build
+```
+
+- アプリ: `http://localhost:3000`
+- DB: `localhost:5432`
+
+### 初回セットアップ
+
+`docker compose up` だけではテーブル作成用 SQL は反映されますが、アプリで利用する初期データは投入されません。
+初回のみ、別途 DB 初期化を実行してください。
+
+```bash
+docker compose run --rm app node server/initDb.js
+```
+
+このコマンドで以下を実施します。
+
+- テーブル作成 SQL の再実行
+- 初期ユーザーの投入
+- クリエーター、アーティスト、グループ、楽曲などのサンプルデータ投入
+
+### 起動手順の例
+
+初回:
+
+```bash
+docker compose up -d --build
+docker compose run --rm app node server/initDb.js
+```
+
+2回目以降:
+
+```bash
+docker compose up -d
+```
+
+### 停止
+
+```bash
+docker compose down
+```
+
+### データリセット
+
+```bash
+docker compose down -v
+docker compose up -d --build
+docker compose run --rm app node server/initDb.js
+```
+
+## ローカル実行
+
+1. 依存関係をインストール
 
 ```bash
 npm install
 ```
 
-3. `.env` を作成
+2. `.env` を作成
 
 ```bash
 cp .env.example .env
 ```
 
-4. `.env` に PostgreSQL 接続情報を設定
+3. `.env` に PostgreSQL 接続情報を設定
+
+`server/db.js` は PostgreSQL の `PG_*` 系環境変数を参照します。
 
 ```env
 PG_USER=postgres
 PG_PASSWORD=your_password
 PG_HOST=localhost
 PG_PORT=5432
-PG_DATABASE=musicapp
+PG_DATABASE=musicdb
 PORT=3000
 ```
 
-5. DB 初期化
+4. DB 初期化
 
 ```bash
 node server/initDb.js
