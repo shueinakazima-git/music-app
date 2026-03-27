@@ -2,11 +2,39 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./db');
 
+const CONNECT_RETRY_DELAY_MS = Number(process.env.DB_CONNECT_RETRY_DELAY_MS) || 2000;
+const CONNECT_MAX_RETRIES = Number(process.env.DB_CONNECT_MAX_RETRIES) || 30;
+
 function splitSqlStatements(sqlText) {
   return sqlText
     .split(';')
     .map((stmt) => stmt.trim())
     .filter((stmt) => stmt.length > 0);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function getConnectionWithRetry() {
+  let lastError;
+
+  for (let attempt = 1; attempt <= CONNECT_MAX_RETRIES; attempt += 1) {
+    try {
+      return await db.getConnection();
+    } catch (err) {
+      lastError = err;
+      console.warn(
+        `DB connection attempt ${attempt}/${CONNECT_MAX_RETRIES} failed: ${err.message}`
+      );
+
+      if (attempt < CONNECT_MAX_RETRIES) {
+        await sleep(CONNECT_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 async function executeSqlFile(conn, filePath) {
@@ -122,7 +150,7 @@ async function seedIfEmpty(conn) {
 async function initializeDatabase() {
   let conn;
   try {
-    conn = await db.getConnection();
+    conn = await getConnectionWithRetry();
     const ddlPath = path.join(__dirname, '..', 'query', 'create_table_postgres.sql');
 
     await executeSqlFile(conn, ddlPath);

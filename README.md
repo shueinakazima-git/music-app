@@ -107,6 +107,60 @@ docker compose up -d --build
 docker compose run --rm app node server/initDb.js
 ```
 
+## Kubernetes での起動
+
+`k8s/` 配下にはアプリと PostgreSQL の manifest を配置しています。
+
+- `k8s/postgres/`: PostgreSQL の Deployment / Service / PVC / Secret テンプレート
+- `k8s/app/`: アプリの Deployment / Service / Ingress / initdb Job / Secret テンプレート
+
+### 事前準備
+
+1. Secret テンプレートをコピーして実値を設定
+
+```bash
+cp k8s/postgres/secret.example.yaml k8s/postgres/secret.yaml
+cp k8s/app/secret.example.yaml k8s/app/secret.yaml
+```
+
+2. `secret.yaml` の認証情報や接続先を環境に合わせて編集
+
+- `k8s/postgres/secret.yaml`: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+- `k8s/app/secret.yaml`: `PG_USER`, `PG_PASSWORD`, `PG_DATABASE`, `PG_HOST`, `PG_PORT`, `PORT`
+
+`k8s/app/secret.yaml` と `k8s/postgres/secret.yaml` は `.gitignore` に追加済みです。加えて `.dockerignore` にも含めており、Docker build 時にイメージへコピーされないようにしています。
+
+### デプロイ例
+
+```bash
+kubectl apply -f k8s/postgres/secret.yaml
+kubectl apply -f k8s/postgres/postgres-pvc.yaml
+kubectl apply -f k8s/postgres/postgres-deployment.yaml
+kubectl apply -f k8s/postgres/postgres-service.yaml
+
+kubectl apply -f k8s/app/secret.yaml
+kubectl apply -f k8s/app/music-app-initdb-job.yaml
+kubectl apply -f k8s/app/music-app-deployment.yaml
+kubectl apply -f k8s/app/music-app-service.yaml
+kubectl apply -f k8s/app/music-app-ingress.yaml
+```
+
+### initdb Job について
+
+`k8s/app/music-app-initdb-job.yaml` は `node server/initDb.js` を実行して、テーブル作成と初期データ投入を行います。
+
+- DB 接続はリトライ付きです
+- デフォルト値は `DB_CONNECT_RETRY_DELAY_MS=2000`、`DB_CONNECT_MAX_RETRIES=30` です
+- PostgreSQL Pod の起動直後でも、一定時間は接続待ちを行います
+
+### 現時点の懸念点
+
+- `k8s/` 配下の manifest は最小構成です。`readinessProbe`、`livenessProbe`、resource requests/limits などは未設定です
+- `music-app-initdb` Job は接続リトライ付きですが、クラスタ状態によっては再実行が必要になる場合があります
+- `secret.yaml` は各環境で個別作成する前提です。Git には含めません
+- Docker build では `.dockerignore` により `k8s/**/secret.yaml` を build context から除外しています
+- 利用するアプリイメージ `matthew95713/music-app:0.1.0` が pull 可能であることを前提としています
+
 ## ローカル実行
 
 1. 依存関係をインストール

@@ -5,4 +5,5 @@ npm-debug.log
 .DS_Store
 .env
 doc
-
+k8s/app/secret.yaml
+k8s/postgres/secret.yaml
