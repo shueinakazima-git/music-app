@@ -23,10 +23,14 @@
 | Database | PostgreSQL |
 | Driver | pg |
 | Frontend | HTML / CSS / Vanilla JS |
+| Container | Docker / Docker Compose |
 | Test | Node.js built-in test runner (`node --test`) |
 
 ## 必要環境
 
+- Docker 24 以上 / Docker Compose v2 推奨
+
+ローカル実行する場合のみ:
 - Node.js 18 以上
 - npm 9 以上
 - PostgreSQL 13 以上
@@ -40,30 +44,184 @@ git clone https://github.com/shueinakazima-git/music-app.git
 cd music-app
 ```
 
-2. 依存関係をインストール
+## Docker での起動
+
+### 前提
+
+`docker-compose.yml` では以下の 2 サービスを起動します。
+
+- `app`: Node.js / Express アプリケーション
+- `db`: PostgreSQL
+
+`.env` がなくても起動できます。必要に応じて環境変数を上書きしてください。
+
+### 起動
+
+```bash
+docker compose up -d --build
+```
+
+- アプリ: `http://localhost:3000`
+- DB: `localhost:5432`
+
+### 初回セットアップ
+
+`docker compose up` だけではテーブル作成用 SQL は反映されますが、アプリで利用する初期データは投入されません。
+初回のみ、別途 DB 初期化を実行してください。
+
+```bash
+docker compose run --rm app node server/initDb.js
+```
+
+このコマンドで以下を実施します。
+
+- テーブル作成 SQL の再実行
+- 初期ユーザーの投入
+- クリエーター、アーティスト、グループ、楽曲などのサンプルデータ投入
+
+### 起動手順の例
+
+初回:
+
+```bash
+docker compose up -d --build
+docker compose run --rm app node server/initDb.js
+```
+
+2回目以降:
+
+```bash
+docker compose up -d
+```
+
+### 停止
+
+```bash
+docker compose down
+```
+
+### データリセット
+
+```bash
+docker compose down -v
+docker compose up -d --build
+docker compose run --rm app node server/initDb.js
+```
+
+## Kubernetes での起動
+
+`k8s/` 配下にはアプリと PostgreSQL の manifest を配置しています。
+
+- `k8s/postgres/`: PostgreSQL の Deployment / Service / PVC / Secret テンプレート
+- `k8s/app/`: アプリの Deployment / Service / Ingress / initdb Job / Secret テンプレート
+
+### 事前準備
+
+1. Secret テンプレートをコピーして実値を設定
+
+```bash
+cp k8s/postgres/secret.example.yaml k8s/postgres/secret.yaml
+cp k8s/app/secret.example.yaml k8s/app/secret.yaml
+```
+
+2. `secret.yaml` の認証情報や接続先を環境に合わせて編集
+
+- `k8s/postgres/secret.yaml`: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`
+- `k8s/app/secret.yaml`: `PG_USER`, `PG_PASSWORD`, `PG_DATABASE`, `PG_HOST`, `PG_PORT`, `PORT`
+
+`k8s/app/secret.yaml` と `k8s/postgres/secret.yaml` は `.gitignore` に追加済みです。加えて `.dockerignore` にも含めており、Docker build 時にイメージへコピーされないようにしています。
+
+### デプロイ手順
+
+1. PostgreSQL を作成
+```bash
+kubectl apply -f k8s/postgres/secret.yaml
+kubectl apply -f k8s/postgres/postgres-pvc.yaml
+kubectl apply -f k8s/postgres/postgres-deployment.yaml
+kubectl apply -f k8s/postgres/postgres-service.yaml
+```
+
+2. アプリ用 Secret を作成
+```bash
+kubectl apply -f k8s/app/secret.yaml
+```
+
+3. アプリをデプロイ
+```bash
+kubectl apply -f k8s/app/music-app-deployment.yaml
+kubectl apply -f k8s/app/music-app-service.yaml
+```
+
+4. DB 初期化 Job を実行
+```bash
+kubectl apply -f k8s/app/music-app-initdb-job.yaml
+```
+
+5. Ingress を作成
+```bash
+kubectl apply -f k8s/app/music-app-ingress.yaml
+```
+
+### Service 経由で確認
+```bash
+kubectl port-forward service/music-app 3000:3000
+curl http://localhost:3000
+```
+
+### Ingress 経由で確認
+minikube の ingress addon を有効化し、`/etc/hosts` に `music-app.local` を設定後:
+```bash
+curl http://music-app.local
+```
+ブラウザアクセス
+http://music-app.local
+
+### initdb Job について
+
+`k8s/app/music-app-initdb-job.yaml` は `node server/initDb.js` を実行して、テーブル作成と初期データ投入を行います。
+
+- DB 接続はリトライ付きです
+- デフォルト値は `DB_CONNECT_RETRY_DELAY_MS=2000`、`DB_CONNECT_MAX_RETRIES=30` です
+- PostgreSQL Pod の起動直後でも、一定時間は接続待ちを行います
+
+### 現時点の懸念点
+
+- `k8s/` 配下の manifest は最小構成をベースにしていますが、`music-app` / `postgres` ともに基本的な `readinessProbe` / `livenessProbe`、`resources.requests` / `resources.limits` は設定済みです
+- resource 値はローカル検証向けの最小値です。本番環境では実測に基づく再調整が必要です
+- `music-app-initdb` Job は接続リトライ付きですが、クラスタ状態によっては再実行が必要になる場合があります
+- `secret.yaml` は各環境で個別作成する前提です。Git には含めません
+- Docker build では `.dockerignore` により `k8s/**/secret.yaml` を build context から除外しています
+- PostgreSQL は学習用途として `Deployment` を採用しています。本番では要件に応じて `StatefulSet` の利用も検討してください
+- 利用するアプリイメージ `matthew95713/music-app:0.1.0` が pull 可能であることを前提としています
+
+## ローカル実行
+
+1. 依存関係をインストール
 
 ```bash
 npm install
 ```
 
-3. `.env` を作成
+2. `.env` を作成
 
 ```bash
 cp .env.example .env
 ```
 
-4. `.env` に PostgreSQL 接続情報を設定
+3. `.env` に PostgreSQL 接続情報を設定
+
+`server/db.js` は PostgreSQL の `PG_*` 系環境変数を参照します。
 
 ```env
 PG_USER=postgres
 PG_PASSWORD=your_password
 PG_HOST=localhost
 PG_PORT=5432
-PG_DATABASE=musicapp
+PG_DATABASE=musicdb
 PORT=3000
 ```
 
-5. DB 初期化
+4. DB 初期化
 
 ```bash
 node server/initDb.js
@@ -246,3 +404,7 @@ music-app/
 └── test-utils/
     └── withMockedDb.js
 ```
+
+## DB設計
+
+DB　の詳細なテーブル定義・ER 図は `doc/definition_table.md` を参照してください。

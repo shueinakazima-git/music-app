@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: music-app-initdb
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: initdb
+          image: matthew95713/music-app:0.1.0
+          imagePullPolicy: IfNotPresent
+          command: ["node", "server/initDb.js"]
+          envFrom:
+            - secretRef:
+                name: music-app-secret
+  backoffLimit: 2
