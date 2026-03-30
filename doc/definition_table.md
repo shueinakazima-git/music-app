@@ -2,31 +2,31 @@
 ## 基本情報
 
 - システム名：music-app
-- RDB SYSTEM：PostgreSQL
+- RDBMS：PostgreSQL
 - 作成日：2026/2/16
-- 更新日：2026/3/5
+- 更新日：2026/3/30
 
 ---
 
 ## 目次・概要
 
 | NO | 物理名 | 論理名 | 用途 |
-|--- | --- | --- | --- |
+| --- | --- | --- | --- |
 |  1 | [tbl_users](#tbl_users) | ユーザ管理テーブル | ユーザを管理するテーブル。 |
-|  2 | [tbl_creators](#tbl_creators) | クリエイター管理テーブル | クリエイターを管理するテーブル。グループ管理テーブルとアーティスト管理テーブルの親テーブル。 |
-|  3 | [tbl_artists](#tbl_artists) | アーティスト管理テーブル | 単体のアーティストを管理するテーブル。原則として、一人であることを前提とする。「tbl_creators」の子テーブル。 |
-|  4 | [tbl_groups](#tbl_groups) | グループ管理テーブル | グループを管理するテーブル。原則として、「artists」テーブルの集合であることを前提とする。「tbl_creators」の子テーブル。 |
+|  2 | [tbl_creators](#tbl_creators) | クリエイター管理テーブル | クリエイターを管理するテーブル。アーティスト管理テーブルおよびグループ管理テーブルの親テーブル。 |
+|  3 | [tbl_artists](#tbl_artists) | アーティスト管理テーブル | 単体のアーティストを管理するテーブル。原則として 1 人のアーティストを前提とする。「tbl_creators」の子テーブル。 |
+|  4 | [tbl_groups](#tbl_groups) | グループ管理テーブル | グループを管理するテーブル。原則として「tbl_artists」テーブルの集合であることを前提とする。「tbl_creators」の子テーブル。 |
 |  5 | [tbl_music](#tbl_music) | 曲管理テーブル | 曲を管理するテーブル。 |
-|  6 | [tbl_albums](#tbl_albums) | アルバム管理テーブル | アルバム(シングル曲、未リリース曲を含む)を管理するテーブル。 |
-|  7 | [tbl_album_music](#tbl_album_music) | アルバム収録曲管理テーブル | アルバムに収録されている曲を管理するための、アルバム管理テーブルと曲管理テーブルの中間管理テーブル。 |
-|  8 | [tbl_user_owned_music](#tbl_user_owned_music) | 所有曲管理テーブル | ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間管理テーブル。 |
+|  6 | [tbl_albums](#tbl_albums) | アルバム管理テーブル | アルバム（シングル曲、未リリース曲を含む）を管理するテーブル。 |
+|  7 | [tbl_album_music](#tbl_album_music) | アルバム収録曲管理テーブル | アルバムに収録されている曲を管理するための、アルバム管理テーブルと曲管理テーブルの中間テーブル。 |
+|  8 | [tbl_user_owned_music](#tbl_user_owned_music) | 所有曲管理テーブル | ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間テーブル。 |
 |  9 | [tbl_setlists](#tbl_setlists) | セットリスト管理テーブル | セットリストを管理するテーブル。 |
-| 10 | [tbl_setlist_music](#tbl_setlist_music) | セットリスト収録曲管理テーブル | ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間管理テーブル。 |
-| 11 | [tbl_tags](#tbl_tags) | タグ管理テーブル | 音楽ジャンルや、サブカルチャー等、タグを管理するテーブル。 |
-| 12 | [tbl_music_tags](#tbl_music_tags) | 曲のタグ中間管理テーブル | 曲につけるタグを管理するための、曲テーブルとタグテーブルの中間管理テーブル。 |
+| 10 | [tbl_setlist_music](#tbl_setlist_music) | セットリスト収録曲管理テーブル | セットリストに含まれる曲を管理するための、セットリスト管理テーブルと曲管理テーブルの中間テーブル。 |
+| 11 | [tbl_tags](#tbl_tags) | タグ管理テーブル | 音楽ジャンルやサブカルチャーなどのタグを管理するテーブル。 |
+| 12 | [tbl_music_tags](#tbl_music_tags) | 曲タグ中間管理テーブル | 曲に付与するタグを管理するための、曲管理テーブルとタグ管理テーブルの中間テーブル。 |
 | 13 | [tbl_chords](#tbl_chords) | コード管理テーブル | コードを保存して管理するテーブル。 |
-| 14 | [tbl_chord_progression](#tbl_chord_progression) | コード進行管理テーブル| 曲のコード進行を管理するテーブル。 |
-| 15 | [tbl_group_members](#tbl_group_members) | グループメンバー中間管理テーブル | 「artists」テーブル、「groups」テーブルの中間管理テーブル。 |
+| 14 | [tbl_chord_progression](#tbl_chord_progression) | コード進行管理テーブル | 曲のコード進行を管理するテーブル。 |
+| 15 | [tbl_group_members](#tbl_group_members) | グループメンバー中間管理テーブル | 「tbl_artists」テーブルと「tbl_groups」テーブルの中間テーブル。 |
 
 ---
 
@@ -39,28 +39,28 @@
 |    |  |  |  |  | date_of_birth | 生年月日 |  | DATE |
 |  2 | tbl_creators | クリエイター管理テーブル | ○ |  | creator_id | クリエイターID |  | INTEGER |
 |    |  |  |  |  | creator_name | クリエイター名 |  | VARCHAR |
-|    |  |  |  |  | creator_type | クリエイター種別 |  | VARCHAR |
+|    |  |  |  |  | creator_type | クリエイター種別 | `SOLO` または `GROUP` | VARCHAR |
 |  3 | tbl_artists | アーティスト管理テーブル | ○ | ○ | artist_id | アーティストID | 「tbl_creators」「creator_id」を外部参照キーとする。 | INTEGER |
 |    |  |  |  |  | artist_name | アーティスト名 |  | VARCHAR |
 |    |  |  |  |  | date_of_birth | 生年月日 |  | DATE |
 |    |  |  |  |  | started_at | 活動開始日 |  | DATE |
 |    |  |  |  |  | ended_at | 活動終了日 |  | DATE |
-|  4 | tbl_groups | グループ管理テーブル | ○ | ○ | group_id | グループID | 「tbl_creators」「creator_id」を外部参照キーとする| INTEGER |
+|  4 | tbl_groups | グループ管理テーブル | ○ | ○ | group_id | グループID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
 |    |  |  |  |  | group_name | グループ名 |  | VARCHAR |
-|    |  |  |  |  | formation_date | 結成日 | | DATE |
-|    |  |  |  |  | dissolution_date | 解散日 | | DATE |
+|    |  |  |  |  | formation_date | 結成日 |  | DATE |
+|    |  |  |  |  | dissolution_date | 解散日 |  | DATE |
 |  5 | tbl_music | 曲管理テーブル | ○ |  | music_id | 曲ID |  | INTEGER |
 |    |  |  |  |  | music_title | 曲名 |  | VARCHAR |
-|    |  |  |  | ○ | creator_id | クリエーターID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
-|   |  |  |   | ○ | lyrics_by | 作詞家 | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
-|   |  |  |  | ○ | composed_by | 作曲家 | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
-|   |  |  |  | ○ | arranged_by | 編曲家 | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
-|   |  |  |  |  | bpm | bpm |  | INTEGER |
+|    |  |  |  | ○ | creator_id | クリエイターID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
+|   |  |  |   | ○ | lyrics_by | 作詞者ID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
+|   |  |  |  | ○ | composed_by | 作曲者ID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
+|   |  |  |  | ○ | arranged_by | 編曲者ID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
+|   |  |  |  |  | bpm | BPM | 20〜400 | INTEGER |
 |   |  |  |  |  | musical_key | キー |  | VARCHAR |
-|   |  |  |  |  | duration_seconds | 時間 |  | INTEGER |
+|   |  |  |  |  | duration_seconds | 再生時間（秒） | 秒単位で保持する | INTEGER |
 |  6 | tbl_albums | アルバム管理テーブル | ○ |  | album_id | アルバムID |  | INTEGER |
-|   |  |  |  |  | album_name | アルバム名 |  |  VARCHAR |
-|   |  |  |  | ○ | creator_id | クリエーターID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
+|   |  |  |  |  | album_name | アルバム名 |  | VARCHAR |
+|   |  |  |  | ○ | creator_id | クリエイターID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |
 |   |  |  |  |  | release_date | リリース日 |  | DATE |
 |  7 | tbl_album_music | アルバム収録曲管理テーブル | ○ | ○ | album_id | アルバムID | 「tbl_albums」「album_id」を外部参照キーとする | INTEGER |
 |   |  |  |  | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER |
@@ -69,31 +69,31 @@
 |   |  |  | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER |
 | 9 | tbl_setlists | セットリスト管理テーブル | ○ |  | setlist_id | セットリストID |  | INTEGER |
 |   |  |  |  |  | setlist_name | セットリスト名 |  | VARCHAR |
-|   |   |   |   | ○ | user_id | 作成者 | 「tbl_users」「user_id」を外部参照キーとする | INTEGER |
-|   |   |   |   |   | created_at | 作成日 | | DATE |
-|   |   |   |   |   | updated_at | 更新日 | | DATE |
-|   |   |   |   |   |  deleted_at | 削除日 |  | DATE |
+|   |   |   |   | ○ | user_id | 作成者ID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER |
+|   |   |   |   |   | created_at | 作成日時 |  | TIMESTAMP |
+|   |   |   |   |   | updated_at | 更新日時 |  | TIMESTAMP |
+|   |   |   |   |   | deleted_at | 削除日時 |  | TIMESTAMP |
 | 10 | tbl_setlist_music | セットリスト収録曲管理テーブル | ○ | ○ | setlist_id | セットリストID | 「tbl_setlists」「setlist_id」を外部参照キーとする | INTEGER |
 |   |   |   |   | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER |
 |   |   |   | ○ |  | track_number | 曲順 |  | INTEGER |
 | 11 | tbl_tags | タグ管理テーブル | ○ |  | tag_id | タグID |  | INTEGER |
-|   |   |   |   |   |  tag_name | タグ名 |  | VARCHAR | 
-|   |   |   |   |   |  note | 備考 |  | VARCHAR 
-|   |   |   |   | ○ | user_id | 作成者ID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER
-|   |   |   |   |   |  created_at | 作成日 |  | TIMESTAMP
-|   |   |   |   |   |  deleted_at | 削除日 |  | TIMESTAMP
-| 12 | tbl_music_tags | 曲のタグ中間管理テーブル | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER
-|   |   |   | ○ | ○ | tag_id | タグID | 「tbl_tags」「tag_id」を外部参照キーとする | INTEGER
-|   |   |   |   |   |  created_at | 作成日 |  | TIMESTAMP
-| 13 | tbl_chords | コード管理テーブル | ○ |  | chord_id | コードID |  | INTEGER
-|   |   |   |   |   |  chord_name | コード名 |  | VARCHAR
+|   |   |   |   |   | tag_name | タグ名 |  | VARCHAR |
+|   |   |   |   |   | note | 備考 |  | VARCHAR |
+|   |   |   |   | ○ | user_id | 作成者ID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER |
+|   |   |   |   |   | created_at | 作成日時 |  | TIMESTAMP |
+|   |   |   |   |   | deleted_at | 削除日時 |  | TIMESTAMP |
+| 12 | tbl_music_tags | 曲タグ中間管理テーブル | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER |
+|   |   |   | ○ | ○ | tag_id | タグID | 「tbl_tags」「tag_id」を外部参照キーとする | INTEGER |
+|   |   |   |   |   | created_at | 作成日時 |  | TIMESTAMP |
+| 13 | tbl_chords | コード管理テーブル | ○ |  | chord_id | コードID |  | INTEGER |
+|   |   |   |   |   | chord_name | コード名 |  | VARCHAR |
 | 14 | tbl_chord_progression | コード進行管理テーブル | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER |
-|   |   |   |   | ○ | chord_id | コードID | 「tbl_chord」「chord_id」を外部参照キーとする | INTEGER
-|   |   |   | ○ |   | absolute_tick | ティック | 1beat=480ticks、1bar=480 x 拍数 | INTEGER
-| 15 | tbl_group_members | グループメンバー中間テーブル | ○ | ○ | group_id | グループID | 「tbl_groups」「groip_id」を外部参照キーとする | INTEGER |
-|   |   |   | ○ | ○ | artist_id | アーティストID | 「tbl_artists」「artist_id」を外部参照キーとする|INTEGER
-|   |   |   |   |   |  join_date | 加入日 |  | DATE |
-|   |   |   |   |   |  leave_date | 脱退日 |  | DATE |
+|   |   |   |   | ○ | chord_id | コードID | 「tbl_chords」「chord_id」を外部参照キーとする | INTEGER |
+|   |   |   | ○ |   | absolute_tick | ティック | 1 beat = 480 ticks、1 小節 = 480 × 拍数 | INTEGER |
+| 15 | tbl_group_members | グループメンバー中間管理テーブル | ○ | ○ | group_id | グループID | 「tbl_groups」「group_id」を外部参照キーとする | INTEGER |
+|   |   |   | ○ | ○ | artist_id | アーティストID | 「tbl_artists」「artist_id」を外部参照キーとする | INTEGER |
+|   |   |   |   |   | join_date | 加入日 |  | DATE |
+|   |   |   |   |   | leave_date | 脱退日 |  | DATE |
 
 ---
 ## ER図
@@ -148,7 +148,7 @@ erDiagram
 
     tbl_album_music {
         int album_id PK
-        int music_id PK
+        int music_id FK
         int track_number PK
     }
 
@@ -168,7 +168,7 @@ erDiagram
 
     tbl_setlist_music {
         int setlist_id PK
-        int music_id PK
+        int music_id FK
         int track_number PK
     }
 
@@ -242,14 +242,14 @@ erDiagram
 - 物理名： tbl_users
 - 論理名： ユーザ管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
+- 更新日： 2026/3/30
 - 用途： ユーザを管理するテーブル。
 
 | No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | ○ |  | user_id | ユーザID |  | INTEGER | ○ |  |
 | 2 |  |  | user_name | ユーザ名 |  | VARCHAR | ○ |  |
-| 3 |  |  | date_of_birth | 生年月日 |  | DATE |  |  | 
+| 3 |  |  | date_of_birth | 生年月日 |  | DATE |  |  |
 
 ```SQL
 CREATE TABLE tbl_users (
@@ -269,14 +269,14 @@ CREATE TABLE tbl_users (
 - 物理名： tbl_creators
 - 論理名： クリエイター管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： クリエイターを管理するテーブル。グループ管理テーブルとアーティスト管理テーブルの親となるテーブル。
+- 更新日： 2026/3/30
+- 用途： クリエイターを管理するテーブル。アーティスト管理テーブルおよびグループ管理テーブルの親となるテーブル。
 
 | No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ |  | creator_id | クリエイターID |  | INTEGER | ○ |  | 
-| 2 |  |  | creator_name | クリエイター名 |  | VARCHAR | ○ |  | 
-| 3 |  |  | creator_type | クリエイター種別 |  | VARCHAR |  | CHECK (creator_type IN ('SOLO','GROUP')) |
+| 1 | ○ |  | creator_id | クリエイターID |  | INTEGER | ○ |  |
+| 2 |  |  | creator_name | クリエイター名 |  | VARCHAR | ○ |  |
+| 3 |  |  | creator_type | クリエイター種別 | `SOLO` または `GROUP` | VARCHAR |  | CHECK (creator_type IN ('SOLO','GROUP')) |
 
 
 ```SQL
@@ -297,20 +297,20 @@ CREATE TABLE tbl_creators (
 - 物理名： tbl_artists
 - 論理名： アーティスト管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： 単体のアーティストを管理するテーブル。原則として、一人であることを前提とする。「tbl_creators」テーブルを親としてもつ。
+- 更新日： 2026/3/30
+- 用途： 単体のアーティストを管理するテーブル。原則として 1 人のアーティストを前提とし、「tbl_creators」テーブルを親としてもつ。
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ | ○ | artist_id | アーティストID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 2 |  |  | artist_name | アーティスト名 |  | VARCHAR | ○ |  | 
-| 3 |  |  | date_of_birth | 生年月日 |  | DATE |  |  | 
-| 4 |  |  | started_at | 活動開始日 |  | DATE |  |  | 
-| 5 |  |  | ended_at | 活動終了日 |  | DATE |  |  | 
+| 1 | ○ | ○ | artist_id | アーティストID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER | ○ |  |
+| 2 |  |  | artist_name | アーティスト名 |  | VARCHAR | ○ |  |
+| 3 |  |  | date_of_birth | 生年月日 |  | DATE |  |  |
+| 4 |  |  | started_at | 活動開始日 |  | DATE |  |  |
+| 5 |  |  | ended_at | 活動終了日 |  | DATE |  |  |
 
 
 ```SQL
-CREATE TABLE tbl_artists ( 
+CREATE TABLE tbl_artists (
     artist_id INTEGER NOT NULL,
     artist_name VARCHAR(255) NOT NULL,
     date_of_birth DATE,
@@ -334,20 +334,20 @@ CREATE TABLE tbl_artists (
 - 物理名： tbl_groups
 - 論理名： グループ管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： グループを管理するテーブル。原則として、「tbl_artists」テーブルの集合であることを前提とする。「tbl_creators」テーブルを親としてもつ。
+- 更新日： 2026/3/30
+- 用途： グループを管理するテーブル。原則として「tbl_artists」テーブルの集合であることを前提とし、「tbl_creators」テーブルを親としてもつ。
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ | ○ | group_id | グループID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 2 |  |  | group_name | グループ名 |  | VARCHAR | ○ |  | 
-| 3 |  |  | formation_date | 結成日 |  | DATE |  |  | 
-| 4 |  |  | dissolution_date | 解散日 |  | DATE |  |  | 
+| 1 | ○ | ○ | group_id | グループID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER | ○ |  |
+| 2 |  |  | group_name | グループ名 |  | VARCHAR | ○ |  |
+| 3 |  |  | formation_date | 結成日 |  | DATE |  |  |
+| 4 |  |  | dissolution_date | 解散日 |  | DATE |  |  |
 
 
 ```sql
-CREATE TABLE tbl_groups ( 
-    group_id INTEGER,
+CREATE TABLE tbl_groups (
+    group_id INTEGER NOT NULL,
     group_name VARCHAR(255) NOT NULL,
     formation_date DATE,
     dissolution_date DATE,
@@ -369,24 +369,24 @@ CREATE TABLE tbl_groups (
 - 物理名： tbl_music
 - 論理名： 曲管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
+- 更新日： 2026/3/30
 - 用途： 曲を管理するテーブル。
 
-|No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ |  | music_id | 曲ID |  | INTEGER | ○ |  | 
-| 2 |  |  | music_title | 曲名 |  | VARCHAR | ○ |  | 
-| 3 |  | ○ | creator_id | クリエーターID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 4 |  | ○ | lyrics_by | 作詞家 | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |  |  | 
-| 5 |  | ○ | composed_by | 作曲家 | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |  |  | 
-| 6 |  | ○ | arranged_by | 編曲家 | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |  |  | 
-| 7 |  |  | bpm | bpm |  | INTEGER |  | 20~400 | 
-| 8 |  |  | musical_key | キー |  | VARCHAR |  |  | 
-| 9 |  |  | duration_seconds | 時間 |  | INTEGER |  | seconds | 
+| 1 | ○ |  | music_id | 曲ID |  | INTEGER | ○ |  |
+| 2 |  |  | music_title | 曲名 |  | VARCHAR | ○ |  |
+| 3 |  | ○ | creator_id | クリエイターID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER | ○ |  |
+| 4 |  | ○ | lyrics_by | 作詞者ID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |  |  |
+| 5 |  | ○ | composed_by | 作曲者ID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |  |  |
+| 6 |  | ○ | arranged_by | 編曲者ID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER |  |  |
+| 7 |  |  | bpm | BPM |  | INTEGER |  | 20〜400 |
+| 8 |  |  | musical_key | キー |  | VARCHAR |  |  |
+| 9 |  |  | duration_seconds | 再生時間（秒） | 秒単位で保持する | INTEGER |  |  |
 
 
 ```SQL
-CREATE TABLE tbl_music ( 
+CREATE TABLE tbl_music (
     music_id INTEGER GENERATED BY DEFAULT AS IDENTITY,
     music_title VARCHAR(255) NOT NULL,
     creator_id INTEGER NOT NULL,
@@ -425,21 +425,21 @@ CREATE TABLE tbl_music (
 - 物理名： tbl_albums
 - 論理名： アルバム管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： アルバム(シングル曲、未リリース曲を含む)を管理するテーブル。
+- 更新日： 2026/3/30
+- 用途： アルバム（シングル曲、未リリース曲を含む）を管理するテーブル。
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ |  | album_id | アルバムID |  | INTEGER | ○ |  | 
-| 2 |  |  | album_name | アルバム名 |  | VARCHAR | ○ |  | 
-| 3 |  | ○ | creator_id | クリエーターID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 4 |  |  | release_date | リリース日　 |  | DATE |  |  | 
+| 1 | ○ |  | album_id | アルバムID |  | INTEGER | ○ |  |
+| 2 |  |  | album_name | アルバム名 |  | VARCHAR | ○ |  |
+| 3 |  | ○ | creator_id | クリエイターID | 「tbl_creators」「creator_id」を外部参照キーとする | INTEGER | ○ |  |
+| 4 |  |  | release_date | リリース日 |  | DATE |  |  |
 
 ```SQL
 CREATE TABLE tbl_albums (
     album_id   INTEGER GENERATED BY DEFAULT AS IDENTITY,
     album_name VARCHAR(255) NOT NULL,
-    creator_id  INTEGER,
+    creator_id  INTEGER NOT NULL,
     release_date DATE,
 
     CONSTRAINT pk_albums
@@ -458,14 +458,14 @@ CREATE TABLE tbl_albums (
 - 物理名： tbl_album_music
 - 論理名： アルバム収録曲管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： アルバムに収録されている曲を管理するための、アルバム管理テーブルと曲管理テーブルの中間管理テーブル。
+- 更新日： 2026/3/30
+- 用途： アルバムに収録されている曲を管理するための、アルバム管理テーブルと曲管理テーブルの中間テーブル。
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ | ○ | album_id | アルバムID | 「tbl_albums」「album_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 2 |  | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 3 | ○ |  | track_number | 曲順 |  | INTEGER | ○ |  | 
+| 1 | ○ | ○ | album_id | アルバムID | 「tbl_albums」「album_id」を外部参照キーとする | INTEGER | ○ |  |
+| 2 |  | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  |
+| 3 | ○ |  | track_number | 曲順 |  | INTEGER | ○ |  |
 
 ```SQL
 CREATE TABLE tbl_album_music (
@@ -496,13 +496,13 @@ CREATE TABLE tbl_album_music (
 - 物理名： tbl_user_owned_music
 - 論理名： 所有曲管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間管理テーブル。
+- 更新日： 2026/3/30
+- 用途： ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間テーブル。
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ | ○ | user_id | ユーザID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 2 | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  | 
+| 1 | ○ | ○ | user_id | ユーザID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER | ○ |  |
+| 2 | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  |
 
 ```SQL
 CREATE TABLE tbl_user_owned_music (
@@ -531,20 +531,20 @@ CREATE TABLE tbl_user_owned_music (
 - 物理名： tbl_setlists
 - 論理名： セットリスト管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
+- 更新日： 2026/3/30
 - 用途： セットリストを管理するテーブル。
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ |  | setlist_id | セットリストID |  | INTEGER | ○ |  | 
-| 2 |  |  | setlist_name | セットリスト名 |  | VARCHAR | ○ |  | 
-| 3 |  | ○ | user_id | 作成者 | 「tbl_users」「user_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 4 |  |  | created_at | 作成日 |  | TIMESTAMP | ○ |  | 
-| 5 |  |  | updated_at | 更新日 |  | TIMESTAMP |  |  | 
-| 6 |  |  | deleted_at | 削除日 |  | TIMESTAMP |  |  | 
+| 1 | ○ |  | setlist_id | セットリストID |  | INTEGER | ○ |  |
+| 2 |  |  | setlist_name | セットリスト名 |  | VARCHAR | ○ |  |
+| 3 |  | ○ | user_id | 作成者ID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER | ○ |  |
+| 4 |  |  | created_at | 作成日時 |  | TIMESTAMP | ○ |  |
+| 5 |  |  | updated_at | 更新日時 |  | TIMESTAMP |  |  |
+| 6 |  |  | deleted_at | 削除日時 |  | TIMESTAMP |  |  |
 
 ```SQL
-CREATE TABLE tbl_setlists ( 
+CREATE TABLE tbl_setlists (
     setlist_id INTEGER GENERATED BY DEFAULT AS IDENTITY,
     setlist_name VARCHAR(255) NOT NULL,
     user_id INTEGER NOT NULL,
@@ -569,14 +569,14 @@ CREATE TABLE tbl_setlists (
 - 物理名： tbl_setlist_music
 - 論理名： セットリスト収録曲管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： ユーザが所持する曲を管理するための、ユーザ管理テーブルと曲管理テーブルの中間管理テーブル。
+- 更新日： 2026/3/30
+- 用途： セットリストに含まれる曲を管理するための、セットリスト管理テーブルと曲管理テーブルの中間テーブル。
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ | ○ | setlist_id | セットリストID | 「tbl_setlists」「setlist_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 2 |  | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 3 | ○ |  | track_number | 曲順 |  | INTEGER | ○ |  | 
+| 1 | ○ | ○ | setlist_id | セットリストID | 「tbl_setlists」「setlist_id」を外部参照キーとする | INTEGER | ○ |  |
+| 2 |  | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  |
+| 3 | ○ |  | track_number | 曲順 |  | INTEGER | ○ |  |
 
 ```SQL
 CREATE TABLE tbl_setlist_music (
@@ -604,21 +604,21 @@ CREATE TABLE tbl_setlist_music (
 - 物理名： tbl_tags
 - 論理名： タグ管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： 音楽ジャンルや、サブカルチャー等、タグを管理するテーブル。
+- 更新日： 2026/3/30
+- 用途： 音楽ジャンルやサブカルチャーなどのタグを管理するテーブル。
 
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ |  | tag_id | タグID |  | INTEGER | ○ |  | 
-| 2 |  |  | tag_name | タグ名 |  | VARCHAR | ○ |  | 
-| 3 |  |  | note | 備考 |  | VARCHAR |  |  | 
-| 4 |  | ○ | user_id | 作成者ID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 5 |  |  | created_at | 作成日 |  | TIMESTAMP | ○ |  | 
-| 6 |  |  | deleted_at | 削除日 |  | TIMESTAMP |  |  | 
+| 1 | ○ |  | tag_id | タグID |  | INTEGER | ○ |  |
+| 2 |  |  | tag_name | タグ名 |  | VARCHAR | ○ |  |
+| 3 |  |  | note | 備考 |  | VARCHAR |  |  |
+| 4 |  | ○ | user_id | 作成者ID | 「tbl_users」「user_id」を外部参照キーとする | INTEGER | ○ |  |
+| 5 |  |  | created_at | 作成日時 |  | TIMESTAMP | ○ |  |
+| 6 |  |  | deleted_at | 削除日時 |  | TIMESTAMP |  |  |
 
 ```SQL
-CREATE TABLE tbl_tags ( 
+CREATE TABLE tbl_tags (
     tag_id INTEGER GENERATED BY DEFAULT AS IDENTITY,
     tag_name VARCHAR(255) NOT NULL,
     note VARCHAR(255),
@@ -643,16 +643,16 @@ CREATE TABLE tbl_tags (
 ## tbl_music_tags
 
 - 物理名： tbl_music_tags
-- 論理名： 曲のタグ中間管理テーブル
+- 論理名： 曲タグ中間管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： 曲につけるタグを管理するための、曲テーブルとタグテーブルの中間管理テーブル。
+- 更新日： 2026/3/30
+- 用途： 曲に付与するタグを管理するための、曲管理テーブルとタグ管理テーブルの中間テーブル。
 
-No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-1 | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  | 
-2 | ○ | ○ | tag_id | タグID | 「tbl_tags」「tag_id」を外部参照キーとする | INTEGER | ○ |  | 
-3 |  |  | created_at | 作成日 |  | TIMESTAMP | ○ |  | 
+| 1 | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  |
+| 2 | ○ | ○ | tag_id | タグID | 「tbl_tags」「tag_id」を外部参照キーとする | INTEGER | ○ |  |
+| 3 |  |  | created_at | 作成日時 |  | TIMESTAMP | ○ |  |
 
 ```SQL
 CREATE TABLE tbl_music_tags (
@@ -682,14 +682,14 @@ CREATE TABLE tbl_music_tags (
 - 物理名： tbl_chords
 - 論理名： コード管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： タスクを保存して管理するテーブル。
+- 更新日： 2026/3/30
+- 用途： コードを保存して管理するテーブル。
 
 
-No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-1 | ○ |  | chord_id | コードID |  | INTEGER | ○ |  | 
-2 |  |  | chord_name | コード名 |  | VARCHAR | ○ | ユニーク | 
+| 1 | ○ |  | chord_id | コードID |  | INTEGER | ○ |  |
+| 2 |  |  | chord_name | コード名 |  | VARCHAR | ○ | ユニーク |
 
 ```SQL
 CREATE TABLE tbl_chords (
@@ -711,15 +711,15 @@ CREATE TABLE tbl_chords (
 - 物理名： tbl_chord_progression
 - 論理名： コード進行管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
+- 更新日： 2026/3/30
 - 用途： 曲のコード進行を管理するテーブル。
 
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 2 |  | ○ | chord_id | コードID | 「tbl_chord」「chord_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 3 | ○ |  | absolute_tick | ティック | 1beat=480ticks、1bar=480 x 拍数 | INTEGER | ○ |  | 
+| 1 | ○ | ○ | music_id | 曲ID | 「tbl_music」「music_id」を外部参照キーとする | INTEGER | ○ |  |
+| 2 |  | ○ | chord_id | コードID | 「tbl_chords」「chord_id」を外部参照キーとする | INTEGER | ○ |  |
+| 3 | ○ |  | absolute_tick | ティック | 1 beat = 480 ticks、1 小節 = 480 × 拍数 | INTEGER | ○ |  |
 
 ```SQL
 CREATE TABLE tbl_chord_progression (
@@ -746,18 +746,18 @@ CREATE TABLE tbl_chord_progression (
 ## tbl_group_members
 
 - 物理名： tbl_group_members
-- 論理名： グループメンバー中間テーブル
+- 論理名： グループメンバー中間管理テーブル
 - 作成日： 2026/2/16
-- 更新日： 2026/3/5
-- 用途： 「tbl_artists」テーブル、「tbl_groups」テーブルの中間管理テーブル。
+- 更新日： 2026/3/30
+- 用途： 「tbl_artists」テーブルと「tbl_groups」テーブルの中間テーブル。
 
 
-| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 | 
+| No | PK | FK | カラム名 | 項目名 | 備考 | データ型 | NOT NULL | 列制約 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | ○ | ○ | group_id | グループID | 「tbl_groups」「groip_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 2 | ○ | ○ | artist_id | アーティストID | 「tbl_artists」「artist_id」を外部参照キーとする | INTEGER | ○ |  | 
-| 3 |  |  | join_date | 加入日 |  | DATE |  |  | 
-| 4 |  |  | leave_date | 脱退日 |  | DATE |  |  | 
+| 1 | ○ | ○ | group_id | グループID | 「tbl_groups」「group_id」を外部参照キーとする | INTEGER | ○ |  |
+| 2 | ○ | ○ | artist_id | アーティストID | 「tbl_artists」「artist_id」を外部参照キーとする | INTEGER | ○ |  |
+| 3 |  |  | join_date | 加入日 |  | DATE |  |  |
+| 4 |  |  | leave_date | 脱退日 |  | DATE |  |  |
 
 ```SQL
 CREATE TABLE tbl_group_members (

@@ -29,7 +29,8 @@
 ## 必要環境
 
 - Docker 24 以上 / Docker Compose v2 推奨
-- ローカル実行する場合のみ:
+
+ローカル実行する場合のみ:
 - Node.js 18 以上
 - npm 9 以上
 - PostgreSQL 13 以上
@@ -130,20 +131,50 @@ cp k8s/app/secret.example.yaml k8s/app/secret.yaml
 
 `k8s/app/secret.yaml` と `k8s/postgres/secret.yaml` は `.gitignore` に追加済みです。加えて `.dockerignore` にも含めており、Docker build 時にイメージへコピーされないようにしています。
 
-### デプロイ例
+### デプロイ手順
 
+1. PostgreSQL を作成
 ```bash
 kubectl apply -f k8s/postgres/secret.yaml
 kubectl apply -f k8s/postgres/postgres-pvc.yaml
 kubectl apply -f k8s/postgres/postgres-deployment.yaml
 kubectl apply -f k8s/postgres/postgres-service.yaml
+```
 
+2. アプリ用 Secret を作成
+```bash
 kubectl apply -f k8s/app/secret.yaml
-kubectl apply -f k8s/app/music-app-initdb-job.yaml
+```
+
+3. アプリをデプロイ
+```bash
 kubectl apply -f k8s/app/music-app-deployment.yaml
 kubectl apply -f k8s/app/music-app-service.yaml
+```
+
+4. DB 初期化 Job を実行
+```bash
+kubectl apply -f k8s/app/music-app-initdb-job.yaml
+```
+
+5. Ingress を作成
+```bash
 kubectl apply -f k8s/app/music-app-ingress.yaml
 ```
+
+### Service 経由で確認
+```bash
+kubectl port-forward service/music-app 3000:3000
+curl http://localhost:3000
+```
+
+### Ingress 経由で確認
+minikube の ingress addon を有効化し、`/etc/hosts` に `music-app.local` を設定後:
+```bash
+curl http://music-app.local
+```
+ブラウザアクセス
+http://music-app.local
 
 ### initdb Job について
 
@@ -155,10 +186,12 @@ kubectl apply -f k8s/app/music-app-ingress.yaml
 
 ### 現時点の懸念点
 
-- `k8s/` 配下の manifest は最小構成です。`readinessProbe`、`livenessProbe`、resource requests/limits などは未設定です
+- `k8s/` 配下の manifest は最小構成をベースにしていますが、`music-app` / `postgres` ともに基本的な `readinessProbe` / `livenessProbe`、`resources.requests` / `resources.limits` は設定済みです
+- resource 値はローカル検証向けの最小値です。本番環境では実測に基づく再調整が必要です
 - `music-app-initdb` Job は接続リトライ付きですが、クラスタ状態によっては再実行が必要になる場合があります
 - `secret.yaml` は各環境で個別作成する前提です。Git には含めません
 - Docker build では `.dockerignore` により `k8s/**/secret.yaml` を build context から除外しています
+- PostgreSQL は学習用途として `Deployment` を採用しています。本番では要件に応じて `StatefulSet` の利用も検討してください
 - 利用するアプリイメージ `matthew95713/music-app:0.1.0` が pull 可能であることを前提としています
 
 ## ローカル実行
@@ -371,3 +404,7 @@ music-app/
 └── test-utils/
     └── withMockedDb.js
 ```
+
+## DB設計
+
+DB　の詳細なテーブル定義・ER 図は `doc/definition_table.md` を参照してください。
